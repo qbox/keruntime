@@ -28,6 +28,6 @@ KUBEEDGE_OUTPUT_BINPATH="${KUBEEDGE_OUTPUT}/bin"
 
 readonly KUBEEDGE_GO_PACKAGE="github.com/kubeedge/kubeedge"
 
-source "${KUBEEDGE_ROOT}/hack/lib/golang.sh"
+source "${KUBEEDGE_ROOT}/hack/lib/get_golang.sh"
 source "${KUBEEDGE_ROOT}/hack/lib/lint.sh"
 source "${KUBEEDGE_ROOT}/hack/lib/util.sh"
