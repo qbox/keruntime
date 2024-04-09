@@ -29,4 +29,11 @@ const (
 	EdgeNodeLabel = "node-role.kubernetes.io/edge"
 	// node ready status
 	Ready = "Ready"
+
+	// default filter configmap name
+	FilterConfig = "filterConfig"
+	// default filter namespace item name
+	FilterPodNamespaces = "filterPodNamespaces"
+	// default filter pod name prefix
+	FilterPodNamePrefixs = "filterPodNamePrefixs"
 )
