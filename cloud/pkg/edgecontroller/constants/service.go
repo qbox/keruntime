@@ -31,7 +31,7 @@ const (
 	Ready = "Ready"
 
 	// default filter configmap name
-	FilterConfig = "filterConfig"
+	FilterConfig = "filter-config"
 	// default filter namespace item name
 	FilterPodNamespaces = "filterPodNamespaces"
 	// default filter pod name prefix

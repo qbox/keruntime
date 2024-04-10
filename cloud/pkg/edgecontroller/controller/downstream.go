@@ -2,8 +2,6 @@ package controller
 
 import (
 	"context"
-	"encoding/json"
-	"strings"
 	"time"
 
 	v1 "k8s.io/api/core/v1"
