@@ -283,7 +283,7 @@ func (uc *UpstreamController) reportNodeConnectionStatus() {
 		case <-beehiveContext.Done():
 			klog.Warning("stop reportNodeConnectionStatus")
 			return
-		case msg := <- uc.reportNodeConnectionChan:
+		case msg := <-uc.reportNodeConnectionChan:
 			content, err := msg.GetContentData()
 			if err != nil {
 				klog.Errorf("get message content data failed: %v", err)
@@ -307,6 +307,8 @@ func (uc *UpstreamController) reportNodeConnectionStatus() {
 			if resp.StatusCode == http.StatusOK {
 				klog.Info("report node connection status successfully!")
 			}
+			resp.Body.Close()
+
 			uc.syncConfigToEdge(content, nodeId)
 		}
 	}
@@ -320,11 +322,11 @@ func (uc *UpstreamController) syncConfigToEdge(content []byte, nodeId string) {
 		return
 	}
 	if body["eventType"] == common.NodeConnectOperation {
-		go func () {
+		go func() {
 			configMapList := uc.queryConfigMapList("")
 			uc.dispatchConfigMapList(nodeId, configMapList)
 		}()
-		
+
 		go func() {
 			secretList := uc.querySecretList("")
 			uc.dispatchSecretList(nodeId, secretList)
@@ -334,7 +336,7 @@ func (uc *UpstreamController) syncConfigToEdge(content []byte, nodeId string) {
 
 func (uc *UpstreamController) dispatchConfigMapList(nodeId string, configMapList []*v1.ConfigMap) {
 	if configMapList == nil || len(configMapList) == 0 {
-		return 
+		return
 	}
 	for _, configMap := range configMapList {
 		appName, _ := parseNativeLabels(configMap.Labels)
@@ -357,12 +359,12 @@ func (uc *UpstreamController) dispatchConfigMapList(nodeId string, configMapList
 		} else {
 			klog.V(4).Infof("send message successfully, operation: %s, resource: %s", msg.GetOperation(), msg.GetResource())
 		}
-	}	
+	}
 }
-	
+
 func (uc *UpstreamController) dispatchSecretList(nodeId string, secretList []*v1.Secret) {
 	if secretList == nil || len(secretList) == 0 {
-		return 
+		return
 	}
 	for _, secret := range secretList {
 		appName, domain := parseNativeLabels(secret.Labels)
@@ -388,7 +390,7 @@ func (uc *UpstreamController) dispatchSecretList(nodeId string, secretList []*v1
 		} else {
 			klog.V(4).Infof("send message successfully, operation: %s, resource: %s", msg.GetOperation(), msg.GetResource())
 		}
-	}	
+	}
 }
 
 func parseNativeLabels(labels map[string]string) (string, string) {
@@ -400,10 +402,10 @@ func parseNativeLabels(labels map[string]string) (string, string) {
 	if configType == constants.Native {
 		if val, ok := labels[constants.AppName]; ok {
 			appName = val
-		} 
+		}
 		if val, ok := labels[constants.Domain]; ok {
 			domain = val
-		} 
+		}
 	}
 	return appName, domain
 }
@@ -1511,7 +1513,7 @@ func (uc *UpstreamController) nodeMsgResponse(nodeName, namespace, content strin
 }
 
 func (uc *UpstreamController) getNodeConnectionReportUrl() string {
-	reportUrl := fmt.Sprintf("%s://%s:%d%s", uc.config.ReportNodeConnectionStatusConfig.Schema, uc.config.ReportNodeConnectionStatusConfig.Address, 
+	reportUrl := fmt.Sprintf("%s://%s:%d%s", uc.config.ReportNodeConnectionStatusConfig.Schema, uc.config.ReportNodeConnectionStatusConfig.Address,
 		uc.config.ReportNodeConnectionStatusConfig.Port, uc.config.ReportNodeConnectionStatusConfig.ReportPath)
 	return reportUrl
 }
