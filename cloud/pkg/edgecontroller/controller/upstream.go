@@ -299,6 +299,8 @@ func (uc *UpstreamController) reportNodeConnectionStatus() {
 				klog.Errorf("build node connection status report http request failed: %v", err)
 				continue
 			}
+			req.Header.Add("Connection", "Close")
+
 			resp, err := httpUtils.SendRequest(req, uc.httpClient)
 			if err != nil {
 				klog.Errorf("send node connection status report http request failed: %v", err)
