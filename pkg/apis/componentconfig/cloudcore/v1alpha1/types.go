@@ -64,13 +64,13 @@ type MonitorServer struct {
 type Prometheus struct {
 	// Server is the IP address and port for the metric data to push,
 	// defaulting to 127.0.0.1:9091 (set to 0.0.0.0 for all interfaces)
-	Server	string `json:"server,omitempty"`
+	Server string `json:"server,omitempty"`
 	// IntervalS is the time interval for pushing data to the prometheus service,
 	// defaulting to 10
 	IntervalS int `json:"interval_s,omitempty"`
 	// Job is the name of push job,
 	// defaulting to connected_node_count
-	Job string `json:"job,omitempty"` 
+	Job string `json:"job,omitempty"`
 }
 
 // KubeAPIConfig indicates the configuration for interacting with k8s server
@@ -233,16 +233,19 @@ type EdgeController struct {
 	Buffer *EdgeControllerBuffer `json:"buffer,omitempty"`
 	// Load indicates EdgeController load
 	Load *EdgeControllerLoad `json:"load,omitempty"`
+	// filter Pod Namespace
+	FilterPodNamespaces string `json:"filterPodNamespaces,omitempty"`
+	// filter Pod name prefix
+	FilterPodNamePrefixs string `json:"filterPodNamePrefixs,omitempty"`
 	// ReportNodeConnectionStatusConfig indicates report node connection status url
 	ReportNodeConnectionStatusConfig *ReportNodeConnectionStatusConfig `json:"ReportNodeConnectionStatusConfig"`
 }
 
-
 type ReportNodeConnectionStatusConfig struct {
-	Schema  string `json:"schema,omitempty"`
-	Address string `json:"address,omitempty"`
-	Port    uint32 `json:"port,omitempty"`
-	ReportPath    string `json:"reportPath,omitempty"`
+	Schema     string `json:"schema,omitempty"`
+	Address    string `json:"address,omitempty"`
+	Port       uint32 `json:"port,omitempty"`
+	ReportPath string `json:"reportPath,omitempty"`
 }
 
 // EdgeControllerBuffer indicates the EdgeController buffer

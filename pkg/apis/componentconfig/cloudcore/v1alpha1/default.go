@@ -40,9 +40,9 @@ func NewDefaultCloudCoreConfig() *CloudCoreConfig {
 				BindAddress:     "127.0.0.1:9001",
 				EnableProfiling: false,
 				Prometheus: Prometheus{
-					Server: "127.0.0.1:9091",
+					Server:    "127.0.0.1:9091",
 					IntervalS: 10,
-					Job: constants.DefaultJobName,
+					Job:       constants.DefaultJobName,
 				},
 			},
 		},
@@ -55,7 +55,7 @@ func NewDefaultCloudCoreConfig() *CloudCoreConfig {
 			CloudHub: &CloudHub{
 				Enable:                  true,
 				KeepaliveInterval:       30,
-				NodeLimit:               constants.DefaultNodeLimit,        // TODO: tune NodeLimit
+				NodeLimit:               constants.DefaultNodeLimit, // TODO: tune NodeLimit
 				TLSCAFile:               constants.DefaultCAFile,
 				TLSCAKeyFile:            constants.DefaultCAKeyFile,
 				TLSCertFile:             constants.DefaultCertFile,
@@ -69,7 +69,7 @@ func NewDefaultCloudCoreConfig() *CloudCoreConfig {
 					Enable:             false,
 					Address:            "0.0.0.0",
 					Port:               10001,
-					MaxIncomingStreams: 10000,                        // TODO: tune MaxIncomingStreams
+					MaxIncomingStreams: 10000, // TODO: tune MaxIncomingStreams
 				},
 				UnixSocket: &CloudHubUnixSocket{
 					Enable:  true,
@@ -87,15 +87,17 @@ func NewDefaultCloudCoreConfig() *CloudCoreConfig {
 				},
 			},
 			EdgeController: &EdgeController{
-				Enable:              true,
-				NodeUpdateFrequency: 10,
-				Buffer:              getDefaultEdgeControllerBuffer(constants.DefaultNodeLimit),
-				Load:                getDefaultEdgeControllerLoad(constants.DefaultNodeLimit),
+				Enable:               true,
+				NodeUpdateFrequency:  10,
+				Buffer:               getDefaultEdgeControllerBuffer(constants.DefaultNodeLimit),
+				Load:                 getDefaultEdgeControllerLoad(constants.DefaultNodeLimit),
+				FilterPodNamespaces:  "",
+				FilterPodNamePrefixs: "",
 				ReportNodeConnectionStatusConfig: &ReportNodeConnectionStatusConfig{
-					Schema:  "http",
-					Address: "127.0.0.1",
-					Port:    8088,                                     
-					ReportPath:     constants.DefaultNodeConnectionReportPath,
+					Schema:     "http",
+					Address:    "127.0.0.1",
+					Port:       8088,
+					ReportPath: constants.DefaultNodeConnectionReportPath,
 				},
 			},
 			DeviceController: &DeviceController{
@@ -139,7 +141,7 @@ func NewDefaultCloudCoreConfig() *CloudCoreConfig {
 			Router: &Router{
 				Enable:      false,
 				Address:     "0.0.0.0",
-				Port:        9443,                   // TODO: Need to config the Router Port
+				Port:        9443, // TODO: Need to config the Router Port
 				RestTimeout: 60,
 			},
 			IptablesManager: &IptablesManager{
@@ -202,7 +204,7 @@ func getDefaultEdgeControllerBuffer(nodeLimit int32) *EdgeControllerBuffer {
 		CreateLease:                1024 + nodeLimit,
 		QueryLease:                 constants.DefaultQueryLeaseBuffer,
 		ServiceAccountToken:        constants.DefaultServiceAccountTokenBuffer,
-		ReportNode: 				constants.DefaultReportNodeConnectionStatusBuffer,
+		ReportNode:                 constants.DefaultReportNodeConnectionStatusBuffer,
 	}
 }
 
