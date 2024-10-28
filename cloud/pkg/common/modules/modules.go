@@ -4,6 +4,9 @@ const (
 	CloudHubModuleName  = "cloudhub"
 	CloudHubModuleGroup = "cloudhub"
 
+	CloudIDManagerName  = "cloudidmanager"
+	CloudIDManagerGroup = "cloudidmanager"
+
 	EdgeControllerModuleName = "edgecontroller"
 	EdgeControllerGroupName  = "edgecontroller"
 

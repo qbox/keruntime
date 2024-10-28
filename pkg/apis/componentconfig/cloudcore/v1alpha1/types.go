@@ -115,6 +115,8 @@ type Modules struct {
 	Router *Router `json:"router,omitempty"`
 	// IptablesManager indicates iptables module config
 	IptablesManager *IptablesManager `json:"iptablesManager,omitempty"`
+	// CloudIDManager store the cloud core ident
+	CloudIDManager *CloudIDManager `json:"cloudIDManager,omitempty"`
 }
 
 // CloudHub indicates the config of CloudHub module.
@@ -502,4 +504,12 @@ type IptablesManager struct {
 	// default internal.
 	// +kubebuilder:validation:Enum=internal;external
 	Mode IptablesMgrMode `json:"mode,omitempty"`
+}
+
+// CloudIDManager ident the cloud core
+type CloudIDManager struct {
+	// default true
+	Enable bool `json:"enable"`
+	// If ID is empty, the component will generate ID over Core Name, Core IP and Core MAC address.
+	ID string `json:"id,omitempty"`
 }
