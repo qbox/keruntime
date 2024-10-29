@@ -2,12 +2,15 @@ package cloudidmanager
 
 import (
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"k8s.io/klog/v2"
 )
 
 type Manager struct {
+	NodeNumber int32
+
 	Nodes sync.Map
 }
 
@@ -38,10 +41,12 @@ func (ccm *Manager) AddNode(nodeConn *NodeConnectionInfo) {
 	if exist {
 		if oldNodeID, ok := ons.(NodeConnectionInfo); ok {
 			klog.Warningf("node exists for %s", oldNodeID)
+			atomic.AddInt32(&ccm.NodeNumber, -1)
 		}
 	}
 
 	ccm.Nodes.Store(nodeID, nodeConn)
+	atomic.AddInt32(&ccm.NodeNumber, 1)
 }
 
 func (ccm *Manager) DeleteNode(nodeConn *NodeConnectionInfo) {
@@ -58,6 +63,7 @@ func (ccm *Manager) DeleteNode(nodeConn *NodeConnectionInfo) {
 	}
 
 	ccm.Nodes.Delete(nodeConn.nodeID)
+	atomic.AddInt32(&ccm.NodeNumber, -1)
 }
 
 func (ccm *Manager) GetCloud(nodeID string) (*NodeConnectionInfo, bool) {
@@ -67,8 +73,4 @@ func (ccm *Manager) GetCloud(nodeID string) (*NodeConnectionInfo, bool) {
 	}
 
 	return nil, false
-}
-
-func (ccm *Manager) SyncFromSessions() {
-	// TODO
 }

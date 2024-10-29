@@ -137,6 +137,7 @@ func (mh *messageHandler) HandleConnection(connection conn.Connection) {
 		mh.SessionManager.AddSession(nodeSession)
 		cloudidmanager.CloudIDManager.ConnectionInfoManager.AddNode(nodeConnInfo)
 
+		mh.SyncConnectionInfoWithSessions()
 		// start session for each edge node and it will keep running until
 		// it encounters some Transport Error from underlying connection.
 		nodeSession.Start()
@@ -178,4 +179,10 @@ func (mh *messageHandler) OnReadTransportErr(nodeID, projectID string) {
 	}
 
 	nodeSession.Terminating()
+}
+
+func (mh *messageHandler) SyncConnectionInfoWithSessions() {
+	if mh.SessionManager.NodeNumber != cloudidmanager.CloudIDManager.ConnectionInfoManager.NodeNumber {
+		klog.Warningf("connection node number not equal, plase check ")
+	}
 }
