@@ -60,13 +60,6 @@ type MessageRoute struct {
 	Resource string `json:"resource,omitempty"`
 }
 
-type MessageSource struct {
-	// where the message come from
-	Source string `json:"source,omitempty"`
-	// where the message come from
-	Identity string `json:"identity,omitempty"`
-}
-
 // MessageHeader defines message header details
 type MessageHeader struct {
 	// the message uuid

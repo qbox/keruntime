@@ -89,7 +89,7 @@ type NodeSession struct {
 	// stopOnce is used to mark that session Terminating can only be executed once
 	stopOnce sync.Once
 
-	// cloudID
+	// cloudID is the identifier of where the edge node connected cloud hub.
 	cloudID string
 
 	ctx        context.Context

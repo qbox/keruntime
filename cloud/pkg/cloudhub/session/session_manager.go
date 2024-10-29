@@ -21,6 +21,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/kubeedge/kubeedge/cloud/pkg/cloudidmanager"
 	"k8s.io/klog/v2"
 
 	"github.com/kubeedge/kubeedge/cloud/pkg/common/monitor"
@@ -115,4 +116,15 @@ func (sm *Manager) ReceiveMessageAck(nodeID, parentID string) error {
 
 	session.ReceiveMessageAck(parentID)
 	return nil
+}
+
+// IsNodeConnectSelf find the node connected cloud, with is self.
+func (sm *Manager) IsNodeConnectSelf(nodeID string) (string, bool) {
+	nodeSession, exist := sm.GetSession(nodeID)
+	if !exist {
+		return "", false
+	}
+
+	isSelf := cloudidmanager.CloudIDManager.IsIDSelf(nodeSession.GetNodeConnectedCloudID())
+	return nodeSession.GetNodeConnectedCloudID(), isSelf
 }

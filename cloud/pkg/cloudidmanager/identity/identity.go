@@ -19,23 +19,29 @@ const (
 	Configured IDType = iota
 )
 
+type CloudInfo struct {
+	MacAddr  string `json:"macAddr,omitempty"`
+	HostAddr string `json:"hostAddr,omitempty"`
+	WsAddr   string `json:"wsAddr,omitempty"`
+}
+
 type CloudIdentity struct {
 	// Configured indicates whether the identifier displays the ID as automatically generated or manually configured
 	idType IDType
 
-	MacAddr  string `json:"macAddr,omitempty"`
-	HostAddr string `json:"hostAddr,omitempty"`
-	WsAddr   string `json:"wsAddr,omitempty"`
+	cloudInfo *CloudInfo
 
 	id string
 }
 
 func NewCloudIdentity(modules *v1alpha1.Modules) *CloudIdentity {
 	conf := &CloudIdentity{
-		idType:   IDType(modules.CloudIDManager.IDType),
-		MacAddr:  netMac(),
-		HostAddr: modules.CloudHub.HTTPS.Address,
-		WsAddr:   modules.CloudHub.WebSocket.Address,
+		idType: IDType(modules.CloudIDManager.IDType),
+		cloudInfo: &CloudInfo{
+			MacAddr:  netMac(),
+			HostAddr: modules.CloudHub.HTTPS.Address,
+			WsAddr:   modules.CloudHub.WebSocket.Address,
+		},
 	}
 
 	switch conf.idType {
@@ -86,7 +92,7 @@ func (c *CloudIdentity) uuid() error {
 func (c *CloudIdentity) hashID() error {
 	var buffer bytes.Buffer
 	encoder := gob.NewEncoder(&buffer)
-	if err := encoder.Encode(c); err != nil {
+	if err := encoder.Encode(c.cloudInfo); err != nil {
 		return err
 	}
 	h := sha256.Sum256(buffer.Bytes())

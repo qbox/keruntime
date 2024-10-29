@@ -10,7 +10,9 @@ var CloudIDManager *cloudIDManager
 type cloudIDManager struct {
 	enable bool
 
-	ID *identity.CloudIdentity
+	Identity *identity.CloudIdentity
+
+	ConnectionInfoManager *Manager
 }
 
 func Register(modules *v1alpha1.Modules) {
@@ -19,8 +21,9 @@ func Register(modules *v1alpha1.Modules) {
 
 func newCloudIDManager(modules *v1alpha1.Modules) *cloudIDManager {
 	CloudIDManager = &cloudIDManager{
-		enable: modules.CloudIDManager.Enable,
-		ID:     identity.NewCloudIdentity(modules),
+		enable:                modules.CloudIDManager.Enable,
+		Identity:              identity.NewCloudIdentity(modules),
+		ConnectionInfoManager: NewCloudConnectionManager(),
 	}
 	return CloudIDManager
 }
@@ -30,17 +33,9 @@ func (c *cloudIDManager) Enable() bool {
 }
 
 func (c *cloudIDManager) GetCloudID() string {
-	return c.ID.ID()
+	return c.Identity.ID()
 }
 
 func (c *cloudIDManager) IsIDSelf(id string) bool {
-	return c.ID.ID() == id
-}
-
-func (c *cloudIDManager) IsNodeConnectSelf(nodeID string) bool {
-	return c.IsIDSelf(getNodeConnected())
-}
-
-func getNodeConnected() string {
-	return "TODO"
+	return c.Identity.ID() == id
 }

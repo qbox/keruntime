@@ -32,7 +32,6 @@ import (
 	"github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/common"
 	"github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/common/model"
 	"github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/session"
-	"github.com/kubeedge/kubeedge/cloud/pkg/cloudidmanager"
 	"github.com/kubeedge/kubeedge/cloud/pkg/common/messagelayer"
 	"github.com/kubeedge/kubeedge/cloud/pkg/common/modules"
 	"github.com/kubeedge/kubeedge/cloud/pkg/synccontroller"
@@ -152,15 +151,9 @@ func (md *messageDispatcher) DispatchDownstream() {
 				continue
 			}
 
-			nodeSession, exist := md.SessionManager.GetSession(nodeID)
-			if !exist {
-				klog.Warningf("node %s session not exist", nodeID)
-				continue
-			}
-
-			cloudID := nodeSession.GetNodeConnectedCloudID()
-			if !cloudidmanager.CloudIDManager.IsIDSelf(cloudID) {
-				klog.Warningf("node %s is not connected to this cloud %s", nodeID, cloudID)
+			_, isSelfConnect := md.SessionManager.IsNodeConnectSelf(nodeID)
+			if !isSelfConnect {
+				klog.Warningf("node %s is not connected to this cloud", nodeID)
 				continue
 			}
 

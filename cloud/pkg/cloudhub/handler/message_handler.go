@@ -19,6 +19,7 @@ package handler
 import (
 	"time"
 
+	"github.com/kubeedge/kubeedge/cloud/pkg/cloudidmanager"
 	"k8s.io/klog/v2"
 
 	"github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/common"
@@ -131,8 +132,10 @@ func (mh *messageHandler) HandleConnection(connection conn.Connection) {
 		// create a node session for each edge node
 		nodeSession := session.NewNodeSession(nodeID, projectID, connection,
 			keepaliveInterval, nodeMessagePool, mh.reliableClient)
+		nodeConnInfo := cloudidmanager.NewNodeConnectionInfo(nodeID, cloudidmanager.CloudIDManager.GetCloudID())
 		// add node session to the session manager
 		mh.SessionManager.AddSession(nodeSession)
+		cloudidmanager.CloudIDManager.ConnectionInfoManager.AddNode(nodeConnInfo)
 
 		// start session for each edge node and it will keep running until
 		// it encounters some Transport Error from underlying connection.
@@ -143,6 +146,7 @@ func (mh *messageHandler) HandleConnection(connection conn.Connection) {
 		// clean node message pool and session
 		mh.MessageDispatcher.DeleteNodeMessagePool(nodeInfo.NodeID, nodeMessagePool)
 		mh.SessionManager.DeleteSession(nodeSession)
+		cloudidmanager.CloudIDManager.ConnectionInfoManager.DeleteNode(nodeConnInfo)
 		mh.OnEdgeNodeDisconnect(nodeInfo, connection)
 	}()
 }
