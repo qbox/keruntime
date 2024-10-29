@@ -510,6 +510,10 @@ type IptablesManager struct {
 type CloudIDManager struct {
 	// default true
 	Enable bool `json:"enable"`
-	// If ID is empty, the component will generate ID over Core Name, Core IP and Core MAC address.
+	// ID Type
+	// default uuid
+	// 0: uuid, 1: hash, 2: configured
+	IDType uint16 `json:"idType,omitempty"`
+	// If ID is empty, the component will generate ID over Core IP and Core MAC address.
 	ID string `json:"id,omitempty"`
 }

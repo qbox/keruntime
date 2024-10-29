@@ -4,35 +4,83 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/gob"
+	"errors"
+	"net"
+
+	"github.com/google/uuid"
+	"github.com/kubeedge/kubeedge/pkg/apis/componentconfig/cloudcore/v1alpha1"
+)
+
+type IDType uint
+
+const (
+	UUID       IDType = iota
+	Hash       IDType = iota
+	Configured IDType = iota
 )
 
 type CloudIdentity struct {
-	// Configed indicates whether the identifier displays the ID as automatically generated or manually configured
-	Configed bool
+	// Configured indicates whether the identifier displays the ID as automatically generated or manually configured
+	idType IDType
 
-	Name  string   `json:"name"`
-	Label []string `json:"label,omitempty"`
+	MacAddr  string `json:"macAddr,omitempty"`
+	HostAddr string `json:"hostAddr,omitempty"`
+	WsAddr   string `json:"wsAddr,omitempty"`
 
 	id string
 }
 
-func NewCloudIdentity(configed bool, id string) *CloudIdentity {
+func NewCloudIdentity(modules *v1alpha1.Modules) *CloudIdentity {
 	conf := &CloudIdentity{
-		Configed: false,
+		idType:   IDType(modules.CloudIDManager.IDType),
+		MacAddr:  netMac(),
+		HostAddr: modules.CloudHub.HTTPS.Address,
+		WsAddr:   modules.CloudHub.WebSocket.Address,
 	}
-	if configed && id != "" {
-		conf.Configed = configed
-		conf.id = id
-		return conf
+
+	switch conf.idType {
+	case Configured:
+		if err := conf.validateID(modules.CloudIDManager.ID); err != nil {
+			return nil
+		}
+	case Hash:
+		if err := conf.hashID(); err != nil {
+			return nil
+		}
+	default:
+		if err := conf.uuid(); err != nil {
+			return nil
+		}
 	}
-	if err := conf.hashID(); err != nil {
-		return nil
+
+	if conf.id == "" {
+		if err := conf.uuid(); err != nil {
+			return nil
+		}
+		conf.idType = UUID
 	}
 	return conf
 }
 
-func (c *CloudIdentity) Hash() string {
+func (c *CloudIdentity) ID() string {
 	return c.id
+}
+
+func (c *CloudIdentity) validateID(id string) error {
+	if id == "" {
+		return errors.New("id validate failed ")
+	}
+	c.id = id
+	return nil
+}
+
+func (c *CloudIdentity) uuid() error {
+	uid, err := uuid.NewUUID()
+	if err != nil {
+		return err
+	}
+	c.id = uid.String()
+	return nil
 }
 
 func (c *CloudIdentity) hashID() error {
@@ -44,4 +92,17 @@ func (c *CloudIdentity) hashID() error {
 	h := sha256.Sum256(buffer.Bytes())
 	c.id = string(h[:])
 	return nil
+}
+
+func netMac() string {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return ""
+	}
+	for _, iface := range interfaces {
+		if iface.Flags&net.FlagUp != 0 && iface.Flags&net.FlagLoopback == 0 {
+			return iface.HardwareAddr.String()
+		}
+	}
+	return ""
 }

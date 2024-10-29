@@ -31,6 +31,7 @@ import (
 	beehivemodel "github.com/kubeedge/beehive/pkg/core/model"
 	"github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/common"
 	"github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/common/model"
+	"github.com/kubeedge/kubeedge/cloud/pkg/cloudidmanager"
 	"github.com/kubeedge/kubeedge/cloud/pkg/common/messagelayer"
 	deviceconst "github.com/kubeedge/kubeedge/cloud/pkg/devicecontroller/constants"
 	edgeconst "github.com/kubeedge/kubeedge/cloud/pkg/edgecontroller/constants"
@@ -88,6 +89,9 @@ type NodeSession struct {
 	// stopOnce is used to mark that session Terminating can only be executed once
 	stopOnce sync.Once
 
+	// cloudID
+	cloudID string
+
 	ctx        context.Context
 	cancelFunc context.CancelFunc
 }
@@ -111,6 +115,7 @@ func NewNodeSession(
 		nodeMessagePool:   nodeMessagePool,
 		reliableClient:    reliableClient,
 		terminateErr:      NoErr,
+		cloudID:           cloudidmanager.CloudIDManager.GetCloudID(),
 	}
 }
 
@@ -565,4 +570,8 @@ func (ns *NodeSession) deleteSuccessPoint(resourceNamespace, objectSyncName stri
 	if err := ns.nodeMessagePool.AckMessageStore.Delete(msg); err != nil {
 		klog.Errorf("failed to delete message %v, err: %v", msg, err)
 	}
+}
+
+func (ns *NodeSession) GetNodeConnectedCloudID() string {
+	return ns.cloudID
 }

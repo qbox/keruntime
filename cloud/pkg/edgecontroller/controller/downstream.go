@@ -14,7 +14,6 @@ import (
 
 	beehiveContext "github.com/kubeedge/beehive/pkg/core/context"
 	"github.com/kubeedge/beehive/pkg/core/model"
-	"github.com/kubeedge/kubeedge/cloud/pkg/cloudidmanager"
 	"github.com/kubeedge/kubeedge/cloud/pkg/common/client"
 	"github.com/kubeedge/kubeedge/cloud/pkg/common/informers"
 	"github.com/kubeedge/kubeedge/cloud/pkg/common/messagelayer"
@@ -64,9 +63,6 @@ func (dc *DownstreamController) syncPod() {
 				continue
 			}
 			if !dc.lc.IsEdgeNode(pod.Spec.NodeName) {
-				continue
-			}
-			if !cloudidmanager.CloudIDManager.IsIDSelf("TODO") {
 				continue
 			}
 			resource, err := messagelayer.BuildResource(pod.Spec.NodeName, pod.Namespace, model.ResourceTypePod, pod.Name)
