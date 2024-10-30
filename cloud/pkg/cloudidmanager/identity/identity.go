@@ -17,6 +17,7 @@ const (
 	UUID       IDType = iota
 	Hash       IDType = iota
 	Configured IDType = iota
+	System     IDType = iota
 )
 
 type CloudInfo struct {
@@ -37,11 +38,6 @@ type CloudIdentity struct {
 func NewCloudIdentity(modules *v1alpha1.Modules) *CloudIdentity {
 	conf := &CloudIdentity{
 		idType: IDType(modules.CloudIDManager.IDType),
-		cloudInfo: &CloudInfo{
-			MacAddr:  netMac(),
-			HostAddr: modules.CloudHub.HTTPS.Address,
-			WsAddr:   modules.CloudHub.WebSocket.Address,
-		},
 	}
 
 	switch conf.idType {
@@ -50,13 +46,20 @@ func NewCloudIdentity(modules *v1alpha1.Modules) *CloudIdentity {
 			return nil
 		}
 	case Hash:
+		conf.cloudInfo = &CloudInfo{
+			MacAddr:  netMac(),
+			HostAddr: modules.CloudHub.HTTPS.Address,
+			WsAddr:   modules.CloudHub.WebSocket.Address,
+		}
 		if err := conf.hashID(); err != nil {
 			return nil
 		}
-	default:
+	case UUID:
 		if err := conf.uuid(); err != nil {
 			return nil
 		}
+	default:
+		conf.id = modules.CloudIDManager.ID
 	}
 
 	if conf.id == "" {
