@@ -3,7 +3,6 @@ package cloudhub
 import (
 	"os"
 
-	"github.com/kubeedge/kubeedge/cloud/pkg/sessionmanager"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 
@@ -18,6 +17,7 @@ import (
 	"github.com/kubeedge/kubeedge/cloud/pkg/common/client"
 	"github.com/kubeedge/kubeedge/cloud/pkg/common/informers"
 	"github.com/kubeedge/kubeedge/cloud/pkg/common/modules"
+	"github.com/kubeedge/kubeedge/cloud/pkg/sessionmanager"
 	"github.com/kubeedge/kubeedge/pkg/apis/componentconfig/cloudcore/v1alpha1"
 )
 
