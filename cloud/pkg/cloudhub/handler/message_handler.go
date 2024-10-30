@@ -19,7 +19,7 @@ package handler
 import (
 	"time"
 
-	"github.com/kubeedge/kubeedge/cloud/pkg/cloudidmanager"
+	"github.com/kubeedge/kubeedge/cloud/pkg/sessionmanager"
 	"k8s.io/klog/v2"
 
 	"github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/common"
@@ -50,7 +50,7 @@ type Handler interface {
 
 func NewMessageHandler(
 	KeepaliveInterval int,
-	manager *session.Manager,
+	manager *sessionmanager.SessionManager,
 	reliableClient reliableclient.Interface,
 	dispatcher dispatcher.MessageDispatcher) Handler {
 	messageHandler := &messageHandler{
@@ -70,7 +70,7 @@ type messageHandler struct {
 	KeepaliveInterval int
 
 	// SessionManager
-	SessionManager *session.Manager
+	SessionManager *sessionmanager.SessionManager
 
 	// MessageDispatcher
 	MessageDispatcher dispatcher.MessageDispatcher
@@ -111,7 +111,7 @@ func (mh *messageHandler) HandleConnection(connection conn.Connection) {
 		return
 	}
 
-	nodeInfo := &model.HubInfo{ProjectID: projectID, NodeID: nodeID}
+	nodeInfo := &model.HubInfo{ProjectID: projectID, NodeID: nodeID, CloudID: mh.SessionManager.GetCloudID()}
 
 	if err := mh.OnEdgeNodeConnect(nodeInfo, connection); err != nil {
 		klog.Errorf("publish connect event for node %s, err %v", nodeInfo.NodeID, err)
@@ -130,14 +130,11 @@ func (mh *messageHandler) HandleConnection(connection conn.Connection) {
 
 		keepaliveInterval := time.Duration(mh.KeepaliveInterval) * time.Second
 		// create a node session for each edge node
-		nodeSession := session.NewNodeSession(nodeID, projectID, connection,
+		nodeSession := session.NewNodeSession(nodeID, projectID, mh.SessionManager.GetCloudID(), connection,
 			keepaliveInterval, nodeMessagePool, mh.reliableClient)
-		nodeConnInfo := cloudidmanager.NewNodeConnectionInfo(nodeID, cloudidmanager.CloudIDManager.GetCloudID())
 		// add node session to the session manager
 		mh.SessionManager.AddSession(nodeSession)
-		cloudidmanager.CloudIDManager.ConnectionInfoManager.AddNode(nodeConnInfo)
 
-		mh.SyncConnectionInfoWithSessions()
 		// start session for each edge node and it will keep running until
 		// it encounters some Transport Error from underlying connection.
 		nodeSession.Start()
@@ -147,7 +144,6 @@ func (mh *messageHandler) HandleConnection(connection conn.Connection) {
 		// clean node message pool and session
 		mh.MessageDispatcher.DeleteNodeMessagePool(nodeInfo.NodeID, nodeMessagePool)
 		mh.SessionManager.DeleteSession(nodeSession)
-		cloudidmanager.CloudIDManager.ConnectionInfoManager.DeleteNode(nodeConnInfo)
 		mh.OnEdgeNodeDisconnect(nodeInfo, connection)
 	}()
 }
@@ -179,10 +175,4 @@ func (mh *messageHandler) OnReadTransportErr(nodeID, projectID string) {
 	}
 
 	nodeSession.Terminating()
-}
-
-func (mh *messageHandler) SyncConnectionInfoWithSessions() {
-	if mh.SessionManager.NodeNumber != cloudidmanager.CloudIDManager.ConnectionInfoManager.NodeNumber {
-		klog.Warningf("connection node number not equal, plase check ")
-	}
 }

@@ -139,7 +139,7 @@ func NewDefaultCloudCoreConfig() *CloudCoreConfig {
 			Router: &Router{
 				Enable:      false,
 				Address:     "0.0.0.0",
-				Port:        9443, // TODO: Need to config the Router Port
+				Port:        9443,                   // TODO: Need to config the Router Port
 				RestTimeout: 60,
 			},
 			IptablesManager: &IptablesManager{

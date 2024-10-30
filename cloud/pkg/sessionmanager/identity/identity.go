@@ -71,7 +71,7 @@ func NewCloudIdentity(modules *v1alpha1.Modules) *CloudIdentity {
 	return conf
 }
 
-func (c *CloudIdentity) ID() string {
+func (c *CloudIdentity) CloudID() string {
 	return c.id
 }
 

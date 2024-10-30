@@ -265,6 +265,7 @@ func (r *ObjectSyncReactor) CheckObjectSyncs(expectedObjectSyncs []*v1alpha1.Obj
 
 const (
 	TestNodeID                    = "foo-node"
+	TestCloudID                   = "foo-cloud"
 	TestProjectID                 = "foo-project"
 	TestNamespace                 = "foo-ns"
 	TestPodName                   = "foo-pod"

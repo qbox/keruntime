@@ -31,7 +31,6 @@ import (
 	beehivemodel "github.com/kubeedge/beehive/pkg/core/model"
 	"github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/common"
 	"github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/common/model"
-	"github.com/kubeedge/kubeedge/cloud/pkg/cloudidmanager"
 	"github.com/kubeedge/kubeedge/cloud/pkg/common/messagelayer"
 	deviceconst "github.com/kubeedge/kubeedge/cloud/pkg/devicecontroller/constants"
 	edgeconst "github.com/kubeedge/kubeedge/cloud/pkg/edgecontroller/constants"
@@ -97,7 +96,7 @@ type NodeSession struct {
 }
 
 func NewNodeSession(
-	nodeID, projectID string,
+	nodeID, projectID, cloudID string,
 	connection conn.Connection,
 	keepaliveInterval time.Duration,
 	nodeMessagePool *common.NodeMessagePool,
@@ -115,8 +114,12 @@ func NewNodeSession(
 		nodeMessagePool:   nodeMessagePool,
 		reliableClient:    reliableClient,
 		terminateErr:      NoErr,
-		cloudID:           cloudidmanager.CloudIDManager.GetCloudID(),
+		cloudID:           cloudID,
 	}
+}
+
+func (ns *NodeSession) GetNodeID() string {
+	return ns.nodeID
 }
 
 // KeepAliveMessage receive keepalive message from edge node
@@ -574,4 +577,8 @@ func (ns *NodeSession) deleteSuccessPoint(resourceNamespace, objectSyncName stri
 
 func (ns *NodeSession) GetNodeConnectedCloudID() string {
 	return ns.cloudID
+}
+
+func (ns *NodeSession) GetNodeMessagePool() *common.NodeMessagePool {
+	return ns.nodeMessagePool
 }

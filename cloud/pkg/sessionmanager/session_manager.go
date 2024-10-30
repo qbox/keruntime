@@ -1,33 +1,39 @@
-/*
-Copyright 2022 The KubeEdge Authors.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-   http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
-package session
+package sessionmanager
 
 import (
 	"fmt"
 	"sync"
 	"sync/atomic"
 
-	"github.com/kubeedge/kubeedge/cloud/pkg/cloudidmanager"
-	"k8s.io/klog/v2"
-
+	"github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/common"
 	"github.com/kubeedge/kubeedge/cloud/pkg/common/monitor"
+	"github.com/kubeedge/kubeedge/cloud/pkg/sessionmanager/identity"
+	"github.com/kubeedge/kubeedge/pkg/apis/componentconfig/cloudcore/v1alpha1"
+	"k8s.io/klog/v2"
 )
 
-type Manager struct {
+type NodeSession interface {
+	GetNodeID() string
+	GetNodeConnectedCloudID() string
+
+	KeepAliveMessage()
+	KeepAliveCheck()
+
+	SendAckMessage()
+	SendNoAckMessage()
+	ReceiveMessageAck(parentID string)
+
+	Start()
+	Terminating()
+
+	SetTerminateErr(terminateErr int32)
+	GetTerminateErr() int32
+
+	GetNodeMessagePool() *common.NodeMessagePool
+}
+
+type SessionManager struct {
+	Identity *identity.CloudIdentity
 	// NodeNumber is the number of currently connected edge
 	// nodes for single cloudHub instance
 	NodeNumber int32
@@ -39,20 +45,21 @@ type Manager struct {
 }
 
 // NewSessionManager initializes a new SessionManager
-func NewSessionManager(nodeLimit int32) *Manager {
-	return &Manager{
-		NodeLimit:    nodeLimit,
+func NewSessionManager(modules *v1alpha1.Modules) *SessionManager {
+	return &SessionManager{
+		Identity:     identity.NewCloudIdentity(modules),
+		NodeLimit:    modules.CloudHub.NodeLimit,
 		NodeSessions: sync.Map{},
 	}
 }
 
 // AddSession add node session to the session manager
-func (sm *Manager) AddSession(session *NodeSession) {
-	nodeID := session.nodeID
+func (sm *SessionManager) AddSession(session NodeSession) {
+	nodeID := session.GetNodeID()
 
 	ons, exists := sm.NodeSessions.LoadAndDelete(nodeID)
 	if exists {
-		if oldSession, ok := ons.(*NodeSession); ok {
+		if oldSession, ok := ons.(NodeSession); ok {
 			klog.Warningf("session exists for %s, close old session", nodeID)
 			oldSession.Terminating()
 			atomic.AddInt32(&sm.NodeNumber, -1)
@@ -64,40 +71,40 @@ func (sm *Manager) AddSession(session *NodeSession) {
 }
 
 // DeleteSession delete the node session from session manager
-func (sm *Manager) DeleteSession(session *NodeSession) {
-	cacheSession, exist := sm.GetSession(session.nodeID)
+func (sm *SessionManager) DeleteSession(session NodeSession) {
+	cacheSession, exist := sm.GetSession(session.GetNodeID())
 	if !exist {
-		klog.Warningf("session not found for node %s", session.nodeID)
+		klog.Warningf("session not found for node %s", session.GetNodeID())
 		return
 	}
 
 	// This usually happens when the node is disconnect then quickly reconnect
 	if cacheSession != session {
-		klog.Warningf("the session %s already deleted", session.nodeID)
+		klog.Warningf("the session %s already deleted", session.GetNodeID())
 		return
 	}
 
-	sm.NodeSessions.Delete(session.nodeID)
+	sm.NodeSessions.Delete(session.GetNodeID())
 	monitor.ConnectedNodes.Set(float64(atomic.AddInt32(&sm.NodeNumber, -1)))
 }
 
 // GetSession get the node session for the node
-func (sm *Manager) GetSession(nodeID string) (*NodeSession, bool) {
+func (sm *SessionManager) GetSession(nodeID string) (NodeSession, bool) {
 	ons, exists := sm.NodeSessions.Load(nodeID)
 	if exists {
-		return ons.(*NodeSession), true
+		return ons.(NodeSession), true
 	}
 
 	return nil, false
 }
 
 // ReachLimit checks whether the connected nodes exceeds the node limit number
-func (sm *Manager) ReachLimit() bool {
+func (sm *SessionManager) ReachLimit() bool {
 	return atomic.LoadInt32(&sm.NodeNumber) >= sm.NodeLimit
 }
 
 // KeepAliveMessage receive keepalive message from edge node
-func (sm *Manager) KeepAliveMessage(nodeID string) error {
+func (sm *SessionManager) KeepAliveMessage(nodeID string) error {
 	session, exist := sm.GetSession(nodeID)
 	if !exist {
 		return fmt.Errorf("session not found for node %s", nodeID)
@@ -108,7 +115,7 @@ func (sm *Manager) KeepAliveMessage(nodeID string) error {
 }
 
 // ReceiveMessageAck receive the message ack from edge node
-func (sm *Manager) ReceiveMessageAck(nodeID, parentID string) error {
+func (sm *SessionManager) ReceiveMessageAck(nodeID, parentID string) error {
 	session, exist := sm.GetSession(nodeID)
 	if !exist {
 		return fmt.Errorf("session not found for node %s", nodeID)
@@ -119,12 +126,20 @@ func (sm *Manager) ReceiveMessageAck(nodeID, parentID string) error {
 }
 
 // IsNodeConnectSelf find the node connected cloud, with is self.
-func (sm *Manager) IsNodeConnectSelf(nodeID string) (string, bool) {
+func (sm *SessionManager) IsNodeConnectSelf(nodeID string) (string, bool) {
 	nodeSession, exist := sm.GetSession(nodeID)
 	if !exist {
 		return "", false
 	}
 
-	isSelf := cloudidmanager.CloudIDManager.IsIDSelf(nodeSession.GetNodeConnectedCloudID())
+	isSelf := sm.IsCloudSelf(nodeSession.GetNodeConnectedCloudID())
 	return nodeSession.GetNodeConnectedCloudID(), isSelf
+}
+
+func (sm *SessionManager) GetCloudID() string {
+	return sm.Identity.CloudID()
+}
+
+func (sm *SessionManager) IsCloudSelf(id string) bool {
+	return sm.Identity.CloudID() == id
 }

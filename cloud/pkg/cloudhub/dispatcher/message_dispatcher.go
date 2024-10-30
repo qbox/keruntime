@@ -23,6 +23,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/kubeedge/kubeedge/cloud/pkg/sessionmanager"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
@@ -31,7 +32,6 @@ import (
 	beehivemodel "github.com/kubeedge/beehive/pkg/core/model"
 	"github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/common"
 	"github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/common/model"
-	"github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/session"
 	"github.com/kubeedge/kubeedge/cloud/pkg/common/messagelayer"
 	"github.com/kubeedge/kubeedge/cloud/pkg/common/modules"
 	"github.com/kubeedge/kubeedge/cloud/pkg/synccontroller"
@@ -98,7 +98,7 @@ type messageDispatcher struct {
 	NodeMessagePools sync.Map
 
 	// SessionManager
-	SessionManager *session.Manager
+	SessionManager *sessionmanager.SessionManager
 
 	// objectSync client for interacting with Kubernetes API servers.
 	reliableClient reliableclient.Interface
@@ -112,7 +112,7 @@ type messageDispatcher struct {
 
 // NewMessageDispatcher initializes a new MessageDispatcher
 func NewMessageDispatcher(
-	sessionManager *session.Manager,
+	sessionManager *sessionmanager.SessionManager,
 	objectSyncLister synclisters.ObjectSyncLister,
 	clusterObjectSyncLister synclisters.ClusterObjectSyncLister,
 	reliableClient reliableclient.Interface) MessageDispatcher {

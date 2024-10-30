@@ -3,6 +3,7 @@ package cloudhub
 import (
 	"os"
 
+	"github.com/kubeedge/kubeedge/cloud/pkg/sessionmanager"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 
@@ -14,7 +15,6 @@ import (
 	"github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/servers"
 	"github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/servers/httpserver"
 	"github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/servers/udsserver"
-	"github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/session"
 	"github.com/kubeedge/kubeedge/cloud/pkg/common/client"
 	"github.com/kubeedge/kubeedge/cloud/pkg/common/informers"
 	"github.com/kubeedge/kubeedge/cloud/pkg/common/modules"
@@ -33,13 +33,13 @@ type cloudHub struct {
 
 var _ core.Module = (*cloudHub)(nil)
 
-func newCloudHub(enable bool) *cloudHub {
+func newCloudHub(modules *v1alpha1.Modules) *cloudHub {
 	crdFactory := informers.GetInformersManager().GetKubeEdgeInformerFactory()
 	// declare used informer
 	clusterObjectSyncInformer := crdFactory.Reliablesyncs().V1alpha1().ClusterObjectSyncs()
 	objectSyncInformer := crdFactory.Reliablesyncs().V1alpha1().ObjectSyncs()
 
-	sessionManager := session.NewSessionManager(hubconfig.Config.NodeLimit)
+	sessionManager := sessionmanager.NewSessionManager(modules)
 
 	messageDispatcher := dispatcher.NewMessageDispatcher(
 		sessionManager, objectSyncInformer.Lister(),
@@ -50,7 +50,7 @@ func newCloudHub(enable bool) *cloudHub {
 		sessionManager, client.GetCRDClient(), messageDispatcher)
 
 	ch := &cloudHub{
-		enable:         enable,
+		enable:         modules.CloudHub.Enable,
 		dispatcher:     messageDispatcher,
 		messageHandler: messageHandler,
 	}
@@ -61,9 +61,9 @@ func newCloudHub(enable bool) *cloudHub {
 	return ch
 }
 
-func Register(hub *v1alpha1.CloudHub) {
-	hubconfig.InitConfigure(hub)
-	core.Register(newCloudHub(hub.Enable))
+func Register(modules *v1alpha1.Modules) {
+	hubconfig.InitConfigure(modules.CloudHub)
+	core.Register(newCloudHub(modules))
 }
 
 func (ch *cloudHub) Name() string {

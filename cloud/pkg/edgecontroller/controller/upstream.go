@@ -52,7 +52,6 @@ import (
 
 	beehiveContext "github.com/kubeedge/beehive/pkg/core/context"
 	"github.com/kubeedge/beehive/pkg/core/model"
-	"github.com/kubeedge/kubeedge/cloud/pkg/cloudidmanager"
 	"github.com/kubeedge/kubeedge/cloud/pkg/common/client"
 	"github.com/kubeedge/kubeedge/cloud/pkg/common/messagelayer"
 	"github.com/kubeedge/kubeedge/cloud/pkg/common/modules"
@@ -600,13 +599,6 @@ func (uc *UpstreamController) updatePodStatus() {
 // createNode create new edge node to kubernetes
 func (uc *UpstreamController) createNode(name string, node *v1.Node) (*v1.Node, error) {
 	node.Name = name
-	return uc.kubeClient.CoreV1().Nodes().Create(context.Background(), node, metaV1.CreateOptions{})
-}
-
-// createNodeWithCloud create new edge node to kubernetes with linked cloud node
-func (uc *UpstreamController) createNodeWithCloud(name string, node *v1.Node) (*v1.Node, error) {
-	node.Name = name
-	node.Spec.CloudHubID = cloudidmanager.CloudIDManager.GetCloudID()
 	return uc.kubeClient.CoreV1().Nodes().Create(context.Background(), node, metaV1.CreateOptions{})
 }
 

@@ -29,6 +29,8 @@ import (
 	"github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/common"
 	tf "github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/common/testing"
 	"github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/session"
+	"github.com/kubeedge/kubeedge/cloud/pkg/sessionmanager"
+	v1a "github.com/kubeedge/kubeedge/pkg/apis/componentconfig/cloudcore/v1alpha1"
 	"github.com/kubeedge/kubeedge/pkg/apis/reliablesyncs/v1alpha1"
 	"github.com/kubeedge/kubeedge/pkg/client/clientset/versioned/fake"
 	syncinformer "github.com/kubeedge/kubeedge/pkg/client/informers/externalversions"
@@ -298,9 +300,10 @@ func TestEnqueueAckMessage(t *testing.T) {
 		defer mockController.Finish()
 
 		mockConn := mockcon.NewMockConnection(mockController)
-		nodeSession := session.NewNodeSession(tf.TestNodeID, tf.TestProjectID, mockConn, tf.KeepaliveInterval, nmp, client)
+		nodeSession := session.NewNodeSession(tf.TestNodeID, tf.TestProjectID, tf.TestCloudID, mockConn, tf.KeepaliveInterval, nmp, client)
+		conf := v1a.NewDefaultCloudCoreConfig()
 
-		manager := session.NewSessionManager(10)
+		manager := sessionmanager.NewSessionManager(conf.Modules)
 		manager.AddSession(nodeSession)
 
 		// init objectSync lister.
@@ -364,7 +367,9 @@ func TestEnqueueAckMessage(t *testing.T) {
 func TestGetAddNodeMessagePool(t *testing.T) {
 	// Initialize the dispatcher
 	client := &fake.Clientset{}
-	manager := session.NewSessionManager(10)
+	conf := v1a.NewDefaultCloudCoreConfig()
+
+	manager := sessionmanager.NewSessionManager(conf.Modules)
 
 	objectSyncInformer := syncinformer.NewSharedInformerFactory(client, 0).Reliablesyncs().V1alpha1().ObjectSyncs()
 	clusterObjectSyncInformer := syncinformer.NewSharedInformerFactory(client, 0).Reliablesyncs().V1alpha1().ClusterObjectSyncs()
@@ -384,7 +389,9 @@ func TestGetAddNodeMessagePool(t *testing.T) {
 func TestDeleteNodeMessagePool(t *testing.T) {
 	// Initialize the dispatcher
 	client := &fake.Clientset{}
-	manager := session.NewSessionManager(10)
+	conf := v1a.NewDefaultCloudCoreConfig()
+
+	manager := sessionmanager.NewSessionManager(conf.Modules)
 
 	objectSyncInformer := syncinformer.NewSharedInformerFactory(client, 0).Reliablesyncs().V1alpha1().ObjectSyncs()
 	clusterObjectSyncInformer := syncinformer.NewSharedInformerFactory(client, 0).Reliablesyncs().V1alpha1().ClusterObjectSyncs()

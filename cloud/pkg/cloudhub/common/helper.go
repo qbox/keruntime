@@ -88,7 +88,10 @@ func ConstructConnectMessage(info *model.HubInfo, isConnected bool) *beehivemode
 	}
 	body := map[string]interface{}{
 		"eventType": connected,
-		"timestamp":  time.Now().Unix(),
+		"timestamp": time.Now().Unix(),
+		"metadata": map[string]interface{}{
+			"cloudID": info.CloudID,
+		},
 	}
 	content, _ := json.Marshal(body)
 
