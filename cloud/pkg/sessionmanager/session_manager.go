@@ -12,26 +12,42 @@ import (
 	"k8s.io/klog/v2"
 )
 
+// NodeSession is the interface for node session. Each edge node has a NodeSession, which is used to manage the connection with the edge node.
 type NodeSession interface {
 	GetNodeID() string
+	// GetNodeConnectedCloudID return the id which the cloud node connect to.
 	GetNodeConnectedCloudID() string
 
+	// KeepAliveMessage receive keepalive message from edge node
 	KeepAliveMessage()
+	// KeepAliveCheck A goroutine running KeepAliveCheck is started for each connection.
 	KeepAliveCheck()
 
+	// SendAckMessage loops forever sending message that require acknowledgment
+	// to the edge node until an error is encountered (or the connection is closed).
 	SendAckMessage()
+	// SendNoAckMessage loops forever sending the message that does not require acknowledgment
+	// to the edge node until an error is encountered (or the connection is closed).
 	SendNoAckMessage()
+
 	ReceiveMessageAck(parentID string)
 
+	// Start the main goroutine responsible for serving node session
 	Start()
+	// Terminating terminates the node session and it is called when the client goes offline,
+	// It will shutdown the message queue and the goroutine associated with it will exit.
 	Terminating()
 
+	// SetTerminateErr set the terminate error code.
 	SetTerminateErr(terminateErr int32)
+	// GetTerminateErr return terminate code.
 	GetTerminateErr() int32
 
+	// GetNodeMessagePool return the common.NodeMessagePool
 	GetNodeMessagePool() *common.NodeMessagePool
 }
 
+// SessionManager is the manager for node session, and itself have a Identity to store the cloud identity.
 type SessionManager struct {
 	Identity *identity.CloudIdentity
 	// NodeNumber is the number of currently connected edge
@@ -136,10 +152,12 @@ func (sm *SessionManager) IsNodeConnectSelf(nodeID string) (string, bool) {
 	return nodeSession.GetNodeConnectedCloudID(), isSelf
 }
 
+// GetCloudID return this running cloud core id.
 func (sm *SessionManager) GetCloudID() string {
 	return sm.Identity.CloudID()
 }
 
+// IsCloudSelf return is the cloud core id itself.
 func (sm *SessionManager) IsCloudSelf(id string) bool {
 	return sm.Identity.CloudID() == id
 }

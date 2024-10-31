@@ -23,8 +23,9 @@ import (
 	"strings"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 
 	beehivemodel "github.com/kubeedge/beehive/pkg/core/model"
@@ -37,6 +38,7 @@ import (
 // VolumePattern constants for error message
 const (
 	VolumePattern = `^\w[-\w.+]*/` + constants.CSIResourceTypeVolume + `/\w[-\w.+]*`
+	CloudID       = "cloudID"
 )
 
 // VolumeRegExp is used to validate the volume resource
@@ -142,4 +144,16 @@ func NoAckMessageKeyFunc(obj interface{}) (string, error) {
 	}
 
 	return msg.Header.ID, nil
+}
+
+// ReadNodeCloudID read cloudID from node label
+func ReadNodeCloudID(node *corev1.Node) (string, bool) {
+	cloudID, ok := node.ObjectMeta.Labels[CloudID]
+	return cloudID, ok
+}
+
+// SetNodeCloudID set cloudID to node label
+func SetNodeCloudID(node *corev1.Node) *corev1.Node {
+
+	return node
 }
