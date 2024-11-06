@@ -149,10 +149,10 @@ func NewDefaultCloudCoreConfig() *CloudCoreConfig {
 			CloudIDManager: &CloudIDManager{
 				Enable: true,
 				IDType: 3,
-				ID:     "",
+				ID:     "cloudcore",
 			},
 		},
-		CloudCoreNodeID: "",
+		CloudCoreNodeID: "cloudcore",
 	}
 	return c
 }

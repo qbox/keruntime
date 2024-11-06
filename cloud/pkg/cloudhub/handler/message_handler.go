@@ -98,7 +98,7 @@ func (mh *messageHandler) HandleMessage(container *mux.MessageContainer, writer 
 	klog.V(4).Infof("[messageHandler]get msg from node(%s): %+v", nodeID, container.Message)
 
 	// dispatch upstream message
-	mh.MessageDispatcher.DispatchUpstream(container.Message, &model.HubInfo{ProjectID: projectID, NodeID: nodeID})
+	mh.MessageDispatcher.DispatchUpstream(container.Message, &model.HubInfo{ProjectID: projectID, NodeID: nodeID, CloudID: mh.SessionManager.GetCloudID()})
 }
 
 // HandleConnection is invoked when a new connection is established

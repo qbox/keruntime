@@ -37,7 +37,7 @@ type CloudCoreConfig struct {
 	// FeatureGates is a map of feature names to bools that enable or disable alpha/experimental features.
 	FeatureGates map[string]bool `json:"featureGates,omitempty"`
 	// CloudCoreNodeID identity the cloud itself.
-	CloudCoreNodeID string
+	CloudCoreNodeID string `json:"cloudCoreNodeID,omitempty"`
 }
 
 // CommonConfig indicates common config for all modules
