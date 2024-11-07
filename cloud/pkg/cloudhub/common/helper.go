@@ -23,7 +23,6 @@ import (
 	"strings"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
@@ -38,7 +37,6 @@ import (
 // VolumePattern constants for error message
 const (
 	VolumePattern = `^\w[-\w.+]*/` + constants.CSIResourceTypeVolume + `/\w[-\w.+]*`
-	CloudID       = "cloudID"
 )
 
 // VolumeRegExp is used to validate the volume resource
@@ -84,16 +82,13 @@ func TrimMessage(msg *beehivemodel.Message) {
 }
 
 func ConstructConnectMessage(info *model.HubInfo, isConnected bool) *beehivemodel.Message {
-	connected := model.OpConnect  // TODO: handle a NodeConnect Event
+	connected := model.OpConnect // TODO: handle a NodeConnect Event
 	if !isConnected {
 		connected = model.OpDisConnect
 	}
 	body := map[string]interface{}{
 		"eventType": connected,
 		"timestamp": time.Now().Unix(),
-		"metadata": map[string]interface{}{
-			"cloudID": info.CloudID,
-		},
 	}
 	content, _ := json.Marshal(body)
 
@@ -144,16 +139,4 @@ func NoAckMessageKeyFunc(obj interface{}) (string, error) {
 	}
 
 	return msg.Header.ID, nil
-}
-
-// ReadNodeCloudID read cloudID from node label
-func ReadNodeCloudID(node *corev1.Node) (string, bool) {
-	cloudID, ok := node.ObjectMeta.Labels[CloudID]
-	return cloudID, ok
-}
-
-// SetNodeCloudID set cloudID to node label
-func SetNodeCloudID(node *corev1.Node) *corev1.Node {
-
-	return node
 }
