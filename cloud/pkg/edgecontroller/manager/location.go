@@ -158,7 +158,7 @@ func (lc *LocationCache) DeleteNode(nodeName string) {
 }
 
 // Is node able to sync to edge
-func (lc *LocationCache) IsEdgeSyncable(labels map[string]string) bool {
+func (lc *LocationCache) CanPodSyncToEdge(labels map[string]string) bool {
 	value, exist := labels["edgeSync"]
 	if value == "true" {
 		return true

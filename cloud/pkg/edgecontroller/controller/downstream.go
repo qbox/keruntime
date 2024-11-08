@@ -62,7 +62,7 @@ func (dc *DownstreamController) syncPod() {
 				klog.Warningf("object type: %T unsupported", e.Object)
 				continue
 			}
-			if !dc.lc.IsEdgeNode(pod.Spec.NodeName) && !dc.lc.IsEdgeSyncable(pod.ObjectMeta.Labels) {
+			if !dc.lc.IsEdgeNode(pod.Spec.NodeName) && !dc.lc.CanPodSyncToEdge(pod.ObjectMeta.Labels) {
 				continue
 			}
 			resource, err := messagelayer.BuildResource(pod.Spec.NodeName, pod.Namespace, model.ResourceTypePod, pod.Name)
@@ -423,7 +423,7 @@ func (dc *DownstreamController) initLocating() error {
 		return err
 	}
 	for _, p := range pods.Items {
-		if dc.lc.IsEdgeNode(p.Spec.NodeName) && dc.lc.IsEdgeSyncable(p.ObjectMeta.Labels) {
+		if dc.lc.IsEdgeNode(p.Spec.NodeName) && dc.lc.CanPodSyncToEdge(p.ObjectMeta.Labels) {
 			dc.lc.AddOrUpdatePod(p)
 		}
 	}
