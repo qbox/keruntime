@@ -25,6 +25,7 @@ import (
 	"github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/common/model"
 	"github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/dispatcher"
 	"github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/session"
+	"github.com/kubeedge/kubeedge/cloud/pkg/sessionmanager"
 	reliableclient "github.com/kubeedge/kubeedge/pkg/client/clientset/versioned"
 	"github.com/kubeedge/viaduct/pkg/conn"
 	"github.com/kubeedge/viaduct/pkg/mux"
@@ -49,7 +50,7 @@ type Handler interface {
 
 func NewMessageHandler(
 	KeepaliveInterval int,
-	manager *session.Manager,
+	manager *sessionmanager.SessionManager,
 	reliableClient reliableclient.Interface,
 	dispatcher dispatcher.MessageDispatcher) Handler {
 	messageHandler := &messageHandler{
@@ -69,7 +70,7 @@ type messageHandler struct {
 	KeepaliveInterval int
 
 	// SessionManager
-	SessionManager *session.Manager
+	SessionManager *sessionmanager.SessionManager
 
 	// MessageDispatcher
 	MessageDispatcher dispatcher.MessageDispatcher
@@ -97,7 +98,7 @@ func (mh *messageHandler) HandleMessage(container *mux.MessageContainer, writer 
 	klog.V(4).Infof("[messageHandler]get msg from node(%s): %+v", nodeID, container.Message)
 
 	// dispatch upstream message
-	mh.MessageDispatcher.DispatchUpstream(container.Message, &model.HubInfo{ProjectID: projectID, NodeID: nodeID})
+	mh.MessageDispatcher.DispatchUpstream(container.Message, &model.HubInfo{ProjectID: projectID, NodeID: nodeID, CloudID: mh.SessionManager.GetCloudID()})
 }
 
 // HandleConnection is invoked when a new connection is established
@@ -110,7 +111,7 @@ func (mh *messageHandler) HandleConnection(connection conn.Connection) {
 		return
 	}
 
-	nodeInfo := &model.HubInfo{ProjectID: projectID, NodeID: nodeID}
+	nodeInfo := &model.HubInfo{ProjectID: projectID, NodeID: nodeID, CloudID: mh.SessionManager.GetCloudID()}
 
 	if err := mh.OnEdgeNodeConnect(nodeInfo, connection); err != nil {
 		klog.Errorf("publish connect event for node %s, err %v", nodeInfo.NodeID, err)
@@ -129,7 +130,7 @@ func (mh *messageHandler) HandleConnection(connection conn.Connection) {
 
 		keepaliveInterval := time.Duration(mh.KeepaliveInterval) * time.Second
 		// create a node session for each edge node
-		nodeSession := session.NewNodeSession(nodeID, projectID, connection,
+		nodeSession := session.NewNodeSession(nodeID, projectID, mh.SessionManager.GetCloudID(), connection,
 			keepaliveInterval, nodeMessagePool, mh.reliableClient)
 		// add node session to the session manager
 		mh.SessionManager.AddSession(nodeSession)

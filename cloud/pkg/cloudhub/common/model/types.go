@@ -66,6 +66,7 @@ var cloudModuleArray = []string{
 type HubInfo struct {
 	ProjectID string
 	NodeID    string
+	CloudID   string
 }
 
 // NewResource constructs a resource field using resource type and ID

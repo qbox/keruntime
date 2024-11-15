@@ -14,12 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package session
+package sessionmanager
 
 import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	session2 "github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/session"
+	"github.com/kubeedge/kubeedge/pkg/apis/componentconfig/cloudcore/v1alpha1"
 
 	"github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/common"
 	tf "github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/common/testing"
@@ -32,9 +34,10 @@ func TestGetAddSession(t *testing.T) {
 	nmp := common.InitNodeMessagePool(tf.TestNodeID)
 	mockController := gomock.NewController(t)
 	mockConn := mockcon.NewMockConnection(mockController)
-	session := NewNodeSession(tf.TestNodeID, tf.TestProjectID, mockConn, tf.KeepaliveInterval, nmp, client)
+	session := session2.NewNodeSession(tf.TestNodeID, tf.TestProjectID, tf.TestCloudID, mockConn, tf.KeepaliveInterval, nmp, client)
+	conf := v1alpha1.NewDefaultCloudCoreConfig()
 
-	manager := NewSessionManager(10)
+	manager := NewSessionManager(conf.Modules)
 	manager.AddSession(session)
 
 	actualSession, exist := manager.GetSession(tf.TestNodeID)
@@ -51,9 +54,10 @@ func TestDeleteSession(t *testing.T) {
 	nmp := common.InitNodeMessagePool(tf.TestNodeID)
 	mockController := gomock.NewController(t)
 	mockConn := mockcon.NewMockConnection(mockController)
-	session := NewNodeSession(tf.TestNodeID, tf.TestProjectID, mockConn, tf.KeepaliveInterval, nmp, client)
+	session := session2.NewNodeSession(tf.TestNodeID, tf.TestProjectID, tf.TestCloudID, mockConn, tf.KeepaliveInterval, nmp, client)
+	conf := v1alpha1.NewDefaultCloudCoreConfig()
 
-	manager := NewSessionManager(10)
+	manager := NewSessionManager(conf.Modules)
 	manager.AddSession(session)
 	manager.DeleteSession(session)
 
@@ -68,9 +72,10 @@ func TestManager_KeepAliveMessage(t *testing.T) {
 	nmp := common.InitNodeMessagePool(tf.TestNodeID)
 	mockController := gomock.NewController(t)
 	mockConn := mockcon.NewMockConnection(mockController)
-	session := NewNodeSession(tf.TestNodeID, tf.TestProjectID, mockConn, tf.KeepaliveInterval, nmp, client)
+	session := session2.NewNodeSession(tf.TestNodeID, tf.TestProjectID, tf.TestCloudID, mockConn, tf.KeepaliveInterval, nmp, client)
+	conf := v1alpha1.NewDefaultCloudCoreConfig()
 
-	manager := NewSessionManager(10)
+	manager := NewSessionManager(conf.Modules)
 	manager.AddSession(session)
 
 	err := manager.KeepAliveMessage(tf.TestNodeID)
@@ -89,9 +94,10 @@ func TestManager_ReceiveMessageAck(t *testing.T) {
 	nmp := common.InitNodeMessagePool(tf.TestNodeID)
 	mockController := gomock.NewController(t)
 	mockConn := mockcon.NewMockConnection(mockController)
-	session := NewNodeSession(tf.TestNodeID, tf.TestProjectID, mockConn, tf.KeepaliveInterval, nmp, client)
+	session := session2.NewNodeSession(tf.TestNodeID, tf.TestProjectID, tf.TestCloudID, mockConn, tf.KeepaliveInterval, nmp, client)
+	conf := v1alpha1.NewDefaultCloudCoreConfig()
 
-	manager := NewSessionManager(10)
+	manager := NewSessionManager(conf.Modules)
 	manager.AddSession(session)
 
 	err := manager.ReceiveMessageAck(tf.TestNodeID, "a3a93951-a717-4951-a7ad-f0b6b50d14ac")

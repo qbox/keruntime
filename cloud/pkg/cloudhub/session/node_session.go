@@ -88,12 +88,15 @@ type NodeSession struct {
 	// stopOnce is used to mark that session Terminating can only be executed once
 	stopOnce sync.Once
 
+	// cloudID is the identifier of where the edge node connected cloud hub.
+	cloudID string
+
 	ctx        context.Context
 	cancelFunc context.CancelFunc
 }
 
 func NewNodeSession(
-	nodeID, projectID string,
+	nodeID, projectID, cloudID string,
 	connection conn.Connection,
 	keepaliveInterval time.Duration,
 	nodeMessagePool *common.NodeMessagePool,
@@ -111,7 +114,12 @@ func NewNodeSession(
 		nodeMessagePool:   nodeMessagePool,
 		reliableClient:    reliableClient,
 		terminateErr:      NoErr,
+		cloudID:           cloudID,
 	}
+}
+
+func (ns *NodeSession) GetNodeID() string {
+	return ns.nodeID
 }
 
 // KeepAliveMessage receive keepalive message from edge node
@@ -565,4 +573,12 @@ func (ns *NodeSession) deleteSuccessPoint(resourceNamespace, objectSyncName stri
 	if err := ns.nodeMessagePool.AckMessageStore.Delete(msg); err != nil {
 		klog.Errorf("failed to delete message %v, err: %v", msg, err)
 	}
+}
+
+func (ns *NodeSession) GetNodeConnectedCloudID() string {
+	return ns.cloudID
+}
+
+func (ns *NodeSession) GetNodeMessagePool() *common.NodeMessagePool {
+	return ns.nodeMessagePool
 }

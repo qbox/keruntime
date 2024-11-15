@@ -46,6 +46,19 @@ func (c *CloudCoreConfig) Parse(filename string) error {
 	return nil
 }
 
+func (c *CloudCoreConfig) ReadNodeID(filename string) error {
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		klog.Errorf("Failed to read configfile %s: %v", filename, err)
+		return err
+	}
+	c.CloudCoreNodeID = string(data)
+	if c.Modules.CloudIDManager.IDType == 3 {
+		c.Modules.CloudIDManager.ID = string(data)
+	}
+	return nil
+}
+
 func (in *IptablesManager) UnmarshalJSON(data []byte) error {
 	if len(data) == 0 {
 		return nil

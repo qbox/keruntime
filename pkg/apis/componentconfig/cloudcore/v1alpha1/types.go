@@ -36,6 +36,8 @@ type CloudCoreConfig struct {
 	Modules *Modules `json:"modules,omitempty"`
 	// FeatureGates is a map of feature names to bools that enable or disable alpha/experimental features.
 	FeatureGates map[string]bool `json:"featureGates,omitempty"`
+	// CloudCoreNodeID identity the cloud itself.
+	CloudCoreNodeID string `json:"cloudCoreNodeID,omitempty"`
 }
 
 // CommonConfig indicates common config for all modules
@@ -115,6 +117,8 @@ type Modules struct {
 	Router *Router `json:"router,omitempty"`
 	// IptablesManager indicates iptables module config
 	IptablesManager *IptablesManager `json:"iptablesManager,omitempty"`
+	// CloudIDManager store the cloud core ident
+	CloudIDManager *CloudIDManager `json:"cloudIDManager,omitempty"`
 }
 
 // CloudHub indicates the config of CloudHub module.
@@ -502,4 +506,16 @@ type IptablesManager struct {
 	// default internal.
 	// +kubebuilder:validation:Enum=internal;external
 	Mode IptablesMgrMode `json:"mode,omitempty"`
+}
+
+// CloudIDManager ident the cloud core
+type CloudIDManager struct {
+	// default true
+	Enable bool `json:"enable"`
+	// ID Type
+	// default uuid
+	// 0: uuid, 1: hash, 2: configured
+	IDType uint16 `json:"idType,omitempty"`
+	// If ID is empty, the component will generate ID over Core IP and Core MAC address.
+	ID string `json:"id,omitempty"`
 }

@@ -29,12 +29,16 @@ import (
 )
 
 type CloudCoreOptions struct {
-	ConfigFile string
+	ConfigFile        string
+	CloudCoreNodeFile string
 }
+
+const CloudCoreIDFIle = "/home/qboxserve/.miku-nodeid"
 
 func NewCloudCoreOptions() *CloudCoreOptions {
 	return &CloudCoreOptions{
-		ConfigFile: path.Join(constants.DefaultConfigDir, "cloudcore.yaml"),
+		ConfigFile:        path.Join(constants.DefaultConfigDir, "cloudcore.yaml"),
+		CloudCoreNodeFile: CloudCoreIDFIle,
 	}
 }
 
@@ -56,6 +60,9 @@ func (o *CloudCoreOptions) Validate() []error {
 func (o *CloudCoreOptions) Config() (*config.CloudCoreConfig, error) {
 	cfg := config.NewDefaultCloudCoreConfig()
 	if err := cfg.Parse(o.ConfigFile); err != nil {
+		return nil, err
+	}
+	if err := cfg.ReadNodeID(o.CloudCoreNodeFile); err != nil {
 		return nil, err
 	}
 	return cfg, nil

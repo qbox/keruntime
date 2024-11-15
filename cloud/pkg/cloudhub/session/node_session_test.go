@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
+	"github.com/kubeedge/kubeedge/cloud/pkg/sessionmanager"
 	"k8s.io/klog/v2"
 
 	beehivemodel "github.com/kubeedge/beehive/pkg/core/model"
@@ -79,7 +80,7 @@ func TestNodeSessionKeepAliveCheck(t *testing.T) {
 						break TEST
 					case <-checkTicker.C:
 						if session.GetTerminateErr() != NoErr {
-							t.Errorf("Expected %d got %d", NoErr, session.terminateErr)
+							t.Errorf("Expected %d got %d", NoErr, session.GetTerminateErr())
 						}
 					}
 				}
@@ -90,7 +91,7 @@ func TestNodeSessionKeepAliveCheck(t *testing.T) {
 				wg.Wait()
 
 				if session.GetTerminateErr() != TransportErr {
-					t.Errorf("Expected %d got %d", TransportErr, session.terminateErr)
+					t.Errorf("Expected %d got %d", TransportErr, session.GetTerminateErr())
 				}
 			}
 		})
@@ -141,7 +142,7 @@ func TestNodeSessionSendNoAckMessage(t *testing.T) {
 
 			go func() {
 				for _, message := range tt.InitialMessages {
-					enqueueNoAckMessage(session.nodeMessagePool, message)
+					enqueueNoAckMessage(session.GetNodeMessagePool(), message)
 				}
 			}()
 
@@ -319,7 +320,7 @@ func TestNodeSessionSendAckMessage(t *testing.T) {
 		// Simulate downstream message from edge controller
 		go func() {
 			defer wg.Done()
-			test.SimulateMessageFunc(session.nodeMessagePool, test.InitialMessages)
+			test.SimulateMessageFunc(session.GetNodeMessagePool(), test.InitialMessages)
 		}()
 
 		// sleep 2 second to wait the message send
@@ -347,13 +348,13 @@ func normalSimulateMessageFunc(pool *common.NodeMessagePool, messages []*beehive
 }
 
 func openNodeSession(t *testing.T, wg *sync.WaitGroup, stopCh chan struct{}, sendKeepaliveInterval time.Duration,
-	reliableClient reliableclient.Interface) (*NodeSession, *gomock.Controller, *mockcon.MockConnection) {
+	reliableClient reliableclient.Interface) (sessionmanager.NodeSession, *gomock.Controller, *mockcon.MockConnection) {
 	nmp := common.InitNodeMessagePool(tf.TestNodeID)
 
 	mockController := gomock.NewController(t)
 	mockConn := mockcon.NewMockConnection(mockController)
 
-	session := NewNodeSession(tf.TestNodeID, tf.TestProjectID, mockConn, tf.KeepaliveInterval, nmp, reliableClient)
+	session := NewNodeSession(tf.TestNodeID, tf.TestProjectID, tf.TestCloudID, mockConn, tf.KeepaliveInterval, nmp, reliableClient)
 
 	wg.Add(1)
 

@@ -31,9 +31,9 @@ import (
 	beehivemodel "github.com/kubeedge/beehive/pkg/core/model"
 	"github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/common"
 	"github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/common/model"
-	"github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/session"
 	"github.com/kubeedge/kubeedge/cloud/pkg/common/messagelayer"
 	"github.com/kubeedge/kubeedge/cloud/pkg/common/modules"
+	"github.com/kubeedge/kubeedge/cloud/pkg/sessionmanager"
 	"github.com/kubeedge/kubeedge/cloud/pkg/synccontroller"
 	commonconst "github.com/kubeedge/kubeedge/common/constants"
 	v2 "github.com/kubeedge/kubeedge/edge/pkg/metamanager/dao/v2"
@@ -98,7 +98,7 @@ type messageDispatcher struct {
 	NodeMessagePools sync.Map
 
 	// SessionManager
-	SessionManager *session.Manager
+	SessionManager *sessionmanager.SessionManager
 
 	// objectSync client for interacting with Kubernetes API servers.
 	reliableClient reliableclient.Interface
@@ -112,7 +112,7 @@ type messageDispatcher struct {
 
 // NewMessageDispatcher initializes a new MessageDispatcher
 func NewMessageDispatcher(
-	sessionManager *session.Manager,
+	sessionManager *sessionmanager.SessionManager,
 	objectSyncLister synclisters.ObjectSyncLister,
 	clusterObjectSyncLister synclisters.ClusterObjectSyncLister,
 	reliableClient reliableclient.Interface) MessageDispatcher {
@@ -148,6 +148,12 @@ func (md *messageDispatcher) DispatchDownstream() {
 
 			if !model.IsToEdge(&msg) {
 				klog.Warningf("skip message not to edge node %s: %+v, content %s", nodeID, msg)
+				continue
+			}
+
+			_, isSelfConnect := md.SessionManager.IsNodeConnectSelf(nodeID)
+			if !isSelfConnect {
+				klog.Warningf("node %s is not connected to this cloud", nodeID)
 				continue
 			}
 
