@@ -65,7 +65,7 @@ func (c *CloudCoreConfig) ReadNodeID(filename string) error {
 			klog.Errorf("Failed to read both configfile %s and %s: %v", filename, c.CloudCoreNodeIDFile, err)
 			return err
 		} else {
-			if c.Modules.CloudIdentity.IDType == 3 {
+			if c.Modules.CloudIdentity.IDType == 2 {
 				c.Modules.CloudIdentity.ID = c.CloudCoreNodeID
 			}
 			return nil
@@ -77,7 +77,7 @@ func (c *CloudCoreConfig) ReadNodeID(filename string) error {
 		return err
 	}
 	c.CloudCoreNodeID = string(data)
-	if c.Modules.CloudIdentity.IDType == 3 {
+	if c.Modules.CloudIdentity.IDType == 2 {
 		c.Modules.CloudIdentity.ID = string(data)
 	}
 	return nil
