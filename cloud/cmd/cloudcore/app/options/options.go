@@ -33,12 +33,12 @@ type CloudCoreOptions struct {
 	CloudCoreNodeFile string
 }
 
-const CloudCoreIDFIle = "/home/qboxserve/.miku-nodeid"
+const DefaultCloudCoreIDFIle = "/home/qboxserver/.miku-nodeid"
 
 func NewCloudCoreOptions() *CloudCoreOptions {
 	return &CloudCoreOptions{
 		ConfigFile:        path.Join(constants.DefaultConfigDir, "cloudcore.yaml"),
-		CloudCoreNodeFile: CloudCoreIDFIle,
+		CloudCoreNodeFile: DefaultCloudCoreIDFIle,
 	}
 }
 

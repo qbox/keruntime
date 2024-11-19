@@ -21,6 +21,7 @@ import (
 	"errors"
 	"os"
 
+	"github.com/kubeedge/kubeedge/pkg/util/validation"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/yaml"
 )
@@ -47,14 +48,37 @@ func (c *CloudCoreConfig) Parse(filename string) error {
 }
 
 func (c *CloudCoreConfig) ReadNodeID(filename string) error {
-	data, err := os.ReadFile(filename)
+	nodeIDFile := ""
+	// Read node id from default file
+	if validation.FileIsExist(filename) {
+		nodeIDFile = filename
+	}
+	// Read node id from config file
+	if c.CloudCoreNodeIDFile != "" && validation.FileIsExist(c.CloudCoreNodeIDFile) {
+		nodeIDFile = c.CloudCoreNodeIDFile
+	}
+	// Check node id exist
+	if nodeIDFile == "" && !validation.FileIsExist(nodeIDFile) {
+		// Check default node id exist
+		if c.CloudCoreNodeID == "" {
+			err := errors.New("failed to read configfile")
+			klog.Errorf("Failed to read both configfile %s and %s: %v", filename, c.CloudCoreNodeIDFile, err)
+			return err
+		} else {
+			if c.Modules.CloudIdentity.IDType == 2 {
+				c.Modules.CloudIdentity.ID = c.CloudCoreNodeID
+			}
+			return nil
+		}
+	}
+	data, err := os.ReadFile(nodeIDFile)
 	if err != nil {
-		klog.Errorf("Failed to read configfile %s: %v", filename, err)
+		klog.Errorf("Failed to read configfile %s: %v", nodeIDFile, err)
 		return err
 	}
 	c.CloudCoreNodeID = string(data)
-	if c.Modules.CloudIDManager.IDType == 3 {
-		c.Modules.CloudIDManager.ID = string(data)
+	if c.Modules.CloudIdentity.IDType == 2 {
+		c.Modules.CloudIdentity.ID = string(data)
 	}
 	return nil
 }
