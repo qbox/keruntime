@@ -146,9 +146,8 @@ func NewDefaultCloudCoreConfig() *CloudCoreConfig {
 				Enable: true,
 				Mode:   InternalMode,
 			},
-			CloudIDManager: &CloudIDManager{
-				Enable: true,
-				IDType: 3,
+			CloudIdentity: &CloudIdentity{
+				IDType: 2,
 				ID:     "cloudcore",
 			},
 		},

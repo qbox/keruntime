@@ -16,13 +16,11 @@ type IDType uint
 
 const (
 	// UUID will automatically generate a id for cloud.
-	UUID IDType = iota
+	UUID IDType = 0
 	// Hash will generate a hash id over cloud mac address and addr.
-	Hash IDType = iota
+	Hash IDType = 1
 	// Configured will use the id user config.
-	Configured IDType = iota
-	// System will read cloud id from file, this cloud id will read while start.
-	System IDType = iota
+	Configured IDType = 2
 )
 
 // CloudInfo is some cloud info to generate hash.
@@ -47,12 +45,12 @@ type CloudIdentity struct {
 // NewCloudIdentity need modules config, return CloudIdentity, will generate id while new CloudIdentity.
 func NewCloudIdentity(modules *v1alpha1.Modules) *CloudIdentity {
 	conf := &CloudIdentity{
-		idType: IDType(modules.CloudIDManager.IDType),
+		idType: IDType(modules.CloudIdentity.IDType),
 	}
 
 	switch conf.idType {
 	case Configured:
-		if err := conf.validateID(modules.CloudIDManager.ID); err != nil {
+		if err := conf.validateID(modules.CloudIdentity.ID); err != nil {
 			return nil
 		}
 	case Hash:
@@ -69,7 +67,7 @@ func NewCloudIdentity(modules *v1alpha1.Modules) *CloudIdentity {
 			return nil
 		}
 	default:
-		conf.id = modules.CloudIDManager.ID
+		conf.id = modules.CloudIdentity.ID
 	}
 
 	if conf.id == "" {

@@ -119,8 +119,8 @@ type Modules struct {
 	Router *Router `json:"router,omitempty"`
 	// IptablesManager indicates iptables module config
 	IptablesManager *IptablesManager `json:"iptablesManager,omitempty"`
-	// CloudIDManager store the cloud core ident
-	CloudIDManager *CloudIDManager `json:"cloudIDManager,omitempty"`
+	// CloudIdentity store the cloud core ident
+	CloudIdentity *CloudIdentity `json:"cloudIdentity,omitempty"`
 }
 
 // CloudHub indicates the config of CloudHub module.
@@ -510,10 +510,8 @@ type IptablesManager struct {
 	Mode IptablesMgrMode `json:"mode,omitempty"`
 }
 
-// CloudIDManager ident the cloud core
-type CloudIDManager struct {
-	// default true
-	Enable bool `json:"enable"`
+// CloudIdentity ident the cloud core
+type CloudIdentity struct {
 	// ID Type
 	// default uuid
 	// 0: uuid, 1: hash, 2: configured
