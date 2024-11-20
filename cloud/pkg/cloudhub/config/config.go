@@ -20,9 +20,10 @@ type Configure struct {
 	CaKey         []byte
 	Cert          []byte
 	Key           []byte
+	CloudID       string
 }
 
-func InitConfigure(hub *v1alpha1.CloudHub) {
+func InitConfigure(hub *v1alpha1.CloudHub, cloudID string) {
 	once.Do(func() {
 		if len(hub.AdvertiseAddress) == 0 {
 			klog.Exit("AdvertiseAddress must be specified!")
@@ -30,6 +31,7 @@ func InitConfigure(hub *v1alpha1.CloudHub) {
 
 		Config = Configure{
 			CloudHub: *hub,
+			CloudID:  cloudID,
 		}
 
 		ca, err := os.ReadFile(hub.TLSCAFile)

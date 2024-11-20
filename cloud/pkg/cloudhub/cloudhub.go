@@ -62,7 +62,7 @@ func newCloudHub(modules *v1alpha1.Modules) *cloudHub {
 }
 
 func Register(modules *v1alpha1.Modules) {
-	hubconfig.InitConfigure(modules.CloudHub)
+	hubconfig.InitConfigure(modules.CloudHub, modules.CloudIdentity.ID)
 	core.Register(newCloudHub(modules))
 }
 

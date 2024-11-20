@@ -83,7 +83,7 @@ func GenerateToken() error {
 	// combine caHash and tokenString into caHashAndToken
 	caHashToken := strings.Join([]string{caHash, tokenString}, ".")
 	// save caHashAndToken to secret
-	err = CreateTokenSecret([]byte(caHashToken))
+	err = CreateTokenSecret([]byte(caHashToken), hubconfig.Config.CloudID)
 	if err != nil {
 		return fmt.Errorf("failed to create tokenSecret, err: %v", err)
 	}
@@ -93,7 +93,7 @@ func GenerateToken() error {
 		for {
 			<-t.C
 			refreshedCaHashToken := refreshToken()
-			if err := CreateTokenSecret([]byte(refreshedCaHashToken)); err != nil {
+			if err := CreateTokenSecret([]byte(refreshedCaHashToken), hubconfig.Config.CloudID); err != nil {
 				klog.Exitf("Failed to create the ca token for edgecore register, err: %v", err)
 			}
 		}
