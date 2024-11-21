@@ -156,3 +156,17 @@ func (lc *LocationCache) DeleteSecret(namespace, name string) {
 func (lc *LocationCache) DeleteNode(nodeName string) {
 	lc.EdgeNodes.Delete(nodeName)
 }
+
+// Is node able to sync to edge
+func (lc *LocationCache) CanPodSyncToEdge(labels map[string]string) bool {
+	value, exist := labels["edgeSync"]
+	if value == "true" {
+		return true
+	}
+
+	// [Template] to make sure some pod have not this label
+	if !exist {
+		return true
+	}
+	return false
+}
