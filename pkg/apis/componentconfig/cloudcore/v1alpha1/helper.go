@@ -66,6 +66,7 @@ func (c *CloudCoreConfig) ReadNodeID(filename string) error {
 			return err
 		} else {
 			if c.Modules.CloudIdentity.IDType == 2 {
+				klog.Infof("Using CloudCoreNodeID from config file as node id: %s", c.CloudCoreNodeID)
 				c.Modules.CloudIdentity.ID = c.CloudCoreNodeID
 			}
 			return nil
@@ -78,6 +79,7 @@ func (c *CloudCoreConfig) ReadNodeID(filename string) error {
 	}
 	c.CloudCoreNodeID = string(data)
 	if c.Modules.CloudIdentity.IDType == 2 {
+		klog.Infof("Using nodeIDFile data as node id, file: %s, nodeID: %s", nodeIDFile, c.CloudCoreNodeID)
 		c.Modules.CloudIdentity.ID = string(data)
 	}
 	return nil

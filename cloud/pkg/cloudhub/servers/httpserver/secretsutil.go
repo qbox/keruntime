@@ -3,11 +3,14 @@ package httpserver
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/klog/v2"
 
 	"github.com/kubeedge/kubeedge/cloud/pkg/common/client"
 	"github.com/kubeedge/kubeedge/common/constants"
@@ -37,6 +40,10 @@ func CreateSecret(secret *corev1.Secret, ns string) error {
 	}
 	if _, err := cli.CoreV1().Secrets(ns).Create(context.Background(), secret, metav1.CreateOptions{}); err != nil {
 		if errors.IsAlreadyExists(err) {
+			if secret.ObjectMeta.Name == TokenSecretName {
+				klog.Infof("Never update token secret if exist")
+				return nil
+			}
 			if _, err := cli.CoreV1().Secrets(ns).Update(context.Background(), secret, metav1.UpdateOptions{}); err != nil {
 				return fmt.Errorf("failed to update the secret, namespace: %s, name: %s, err: %v", ns, secret.Name, err)
 			}
@@ -47,11 +54,15 @@ func CreateSecret(secret *corev1.Secret, ns string) error {
 	return nil
 }
 
-func CreateTokenSecret(caHashAndToken []byte) error {
+func CreateTokenSecret(caHashAndToken []byte, cloudcoreID string) error {
 	token := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      TokenSecretName,
 			Namespace: constants.SystemNamespace,
+			Labels: map[string]string{
+				"updatedTime": strconv.Itoa(int(time.Now().Unix())),
+				"updatedBy":   cloudcoreID,
+			},
 		},
 		Data: map[string][]byte{
 			TokenDataName: caHashAndToken,
