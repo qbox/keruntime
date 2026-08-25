@@ -281,6 +281,10 @@ func (e *edged) handlePod(op string, content []byte, updatesChan chan<- interfac
 	// pod according to the node name. So in this scenario, we query metadata from edge
 	// database and use func handlePodListFromMetaManager to sync with Kubelet.
 	if op == model.DeleteOperation && reflect.DeepEqual(pod.Spec, v1.PodSpec{}) {
+		klog.InfoS("Received metadata-only pod delete, refreshing pod snapshot from MetaManager",
+			"node", e.nodeName,
+			"pod", klog.KObj(&pod),
+			"podUID", pod.UID)
 		info := model.NewMessage("").BuildRouter(e.Name(), e.Group(), e.namespace+"/"+model.ResourceTypePod,
 			model.QueryOperation)
 		beehiveContext.Send(modules.MetaManagerModuleName, *info)
@@ -350,6 +354,16 @@ func (e *edged) handlePodListFromMetaManager(content []byte, updatesChan chan<- 
 			}
 		}
 	}
+
+	klog.InfoS("Classified pod list from MetaManager before kubelet SET",
+		"node", e.nodeName,
+		"databasePodCount", len(lists),
+		"activePodCount", len(pods),
+		"terminatingPodCount", len(podsUpdate),
+		"activePods", klog.KObjs(pods),
+		"terminatingPods", klog.KObjs(podsUpdate),
+		"setPodCount", len(podsUpdate),
+		"setPods", klog.KObjs(podsUpdate))
 
 	updates := &kubelettypes.PodUpdate{Op: kubelettypes.SET, Pods: podsUpdate, Source: kubelettypes.ApiserverSource}
 	updatesChan <- *updates

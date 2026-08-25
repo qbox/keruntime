@@ -401,7 +401,8 @@ func processDeletePodDB(message model.Message) error {
 	}
 
 	if podDB.UID != msgPod.UID {
-		klog.Warning("pod UID is not equal to pod stored in DB, don't need to delete pod DB")
+		klog.Warningf("Skipping pod metadata deletion because UID does not match, resource: %s, storedPodUID: %s, messagePodUID: %s, messageID: %s",
+			message.GetResource(), podDB.UID, msgPod.UID, message.GetID())
 		return nil
 	}
 
@@ -417,6 +418,11 @@ func processDeletePodDB(message model.Message) error {
 	if err != nil {
 		return err
 	}
+	klog.InfoS("Deleted pod metadata before notifying edged",
+		"resource", message.GetResource(),
+		"pod", klog.KObj(&podDB),
+		"podUID", podDB.UID,
+		"messageID", message.GetID())
 
 	return nil
 }

@@ -165,6 +165,14 @@ func (s *podStorage) Merge(source string, change interface{}) error {
 	seenBefore := s.sourcesSeen.Has(source)
 	adds, updates, deletes, removes, reconciles := s.merge(source, change)
 	firstSet := !seenBefore && s.sourcesSeen.Has(source)
+	if len(removes.Pods) > 1 {
+		update := change.(kubetypes.PodUpdate)
+		klog.InfoS("Pod configuration update removed multiple pods",
+			"source", source,
+			"operation", update.Op,
+			"removeCount", len(removes.Pods),
+			"pods", klog.KObjs(removes.Pods))
+	}
 
 	// deliver update notifications
 	switch s.mode {
