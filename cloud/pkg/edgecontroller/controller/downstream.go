@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"time"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,6 +49,8 @@ type DownstreamController struct {
 	lc *manager.LocationCache
 
 	podLister clientgov1.PodLister
+
+	config *v1alpha1.EdgeController
 }
 
 func (dc *DownstreamController) syncPod() {
@@ -63,6 +66,9 @@ func (dc *DownstreamController) syncPod() {
 				continue
 			}
 			if !dc.lc.IsEdgeNode(pod.Spec.NodeName) {
+				continue
+			}
+			if !util.IsEdgePod(dc.config, pod) {
 				continue
 			}
 			resource, err := messagelayer.BuildResource(pod.Spec.NodeName, pod.Namespace, model.ResourceTypePod, pod.Name)
@@ -431,6 +437,37 @@ func (dc *DownstreamController) initLocating() error {
 	return nil
 }
 
+func (dc *DownstreamController) setFilterConfig() {
+	setFunc := func() {
+		filterConfig, err := dc.kubeClient.CoreV1().ConfigMaps(v1.NamespaceDefault).Get(context.Background(), constants.FilterConfig, metav1.GetOptions{})
+		if err != nil {
+			klog.Warning("Edgecontroller get filter config failed: %v", err)
+			return
+		}
+		// if configmap has been set, use configmap. otherwise local config will be used
+		namespaces := filterConfig.Data[constants.FilterPodNamespaces]
+		if namespaces != "" {
+			dc.config.FilterPodNamespaces = namespaces
+		}
+		namePrefixs := filterConfig.Data[constants.FilterPodNamePrefixs]
+		if namePrefixs != "" {
+			dc.config.FilterPodNamePrefixs = namePrefixs
+		}
+	}
+	setFunc()
+
+	ticker := time.NewTicker(time.Minute)
+	for {
+		select {
+		case <-beehiveContext.Done():
+			klog.Warning("Stop edgecontroller init filter used pod, secret and configmap config loop")
+			return
+		case <-ticker.C:
+			setFunc()
+		}
+	}
+}
+
 // NewDownstreamController create a DownstreamController from config
 func NewDownstreamController(config *v1alpha1.EdgeController, k8sInformerFactory k8sinformers.SharedInformerFactory, keInformerFactory informers.KubeEdgeCustomInformer,
 	crdInformerFactory crdinformers.SharedInformerFactory) (*DownstreamController, error) {
@@ -488,10 +525,12 @@ func NewDownstreamController(config *v1alpha1.EdgeController, k8sInformerFactory
 		podLister:            podInformer.Lister(),
 		rulesManager:         rulesManager,
 		ruleEndpointsManager: ruleEndpointsManager,
+		config:               config,
 	}
 	if err := dc.initLocating(); err != nil {
 		return nil, err
 	}
+	go dc.setFilterConfig()
 
 	return dc, nil
 }
