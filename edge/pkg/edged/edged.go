@@ -184,6 +184,19 @@ func newEdged(enable bool, nodeName, namespace string) (*edged, error) {
 	return ed, nil
 }
 
+// isNotEdgedResource reports whether the resource type is known to be irrelevant to
+// edged. MetaManager broadcasts every resource pushed down from the cloud to edged,
+// but configmap/secret/serviceaccounttoken are only read back from the local database
+// by other modules (appsd, metaclient). Reporting them as errors floods the node log.
+func isNotEdgedResource(resType string) bool {
+	switch resType {
+	case model.ResourceTypeConfigmap, model.ResourceTypeSecret, model.ResourceTypeServiceAccountToken:
+		return true
+	default:
+		return false
+	}
+}
+
 func (e *edged) syncPod(podCfg *config.PodConfig) {
 	time.Sleep(10 * time.Second)
 
@@ -252,6 +265,10 @@ func (e *edged) syncPod(podCfg *config.PodConfig) {
 				beehiveContext.SendResp(*resp)
 			}
 		default:
+			if isNotEdgedResource(resType) {
+				klog.V(4).Infof("skip resource type %s which is not handled by edged", resType)
+				continue
+			}
 			klog.Errorf("resType is not pod or configmap or secret or volume: resType is %s", resType)
 			continue
 		}

@@ -15,8 +15,8 @@ import (
 	cloudmodules "github.com/kubeedge/kubeedge/cloud/pkg/common/modules"
 	edgecontrollerConstants "github.com/kubeedge/kubeedge/cloud/pkg/edgecontroller/constants"
 	"github.com/kubeedge/kubeedge/common/constants"
-	edgeCommonMessage "github.com/kubeedge/kubeedge/edge/pkg/common/message"
 	connect "github.com/kubeedge/kubeedge/edge/pkg/common/cloudconnection"
+	edgeCommonMessage "github.com/kubeedge/kubeedge/edge/pkg/common/message"
 	"github.com/kubeedge/kubeedge/edge/pkg/common/modules"
 	"github.com/kubeedge/kubeedge/edge/pkg/metamanager/client"
 	metaManagerConfig "github.com/kubeedge/kubeedge/edge/pkg/metamanager/config"
@@ -151,22 +151,37 @@ func requireRemoteQuery(resType string) bool {
 		resType == model.ResourceTypeLease
 }
 
+// isEdgedInterestedResource reports whether a resource pushed down from the cloud
+// should be forwarded to edged. MetaManager persists every such resource, but edged
+// only handles pod and volume. Forwarding the rest makes edged log an error for every
+// message, which floods the node log (thousands of lines per hour). The resources
+// filtered out here are still stored in the local database and remain available to
+// appsd and metaclient through MetaManager queries.
+func isEdgedInterestedResource(resType string) bool {
+	switch resType {
+	case model.ResourceTypeConfigmap, model.ResourceTypeSecret, model.ResourceTypeServiceAccountToken:
+		return false
+	default:
+		return true
+	}
+}
+
 func msgDebugInfo(message *model.Message) string {
 	return fmt.Sprintf("msgID[%s] resource[%s]", message.GetID(), message.GetResource())
 }
 
 func parseLabels(labels map[string]string) (string, string) {
 	if labels == nil || len(labels) == 0 {
-			return "", ""
+		return "", ""
 	}
 	appName, domain := "", ""
 	configType := labels[edgecontrollerConstants.ConfigType]
 	if configType == constants.Native {
 		if val, ok := labels[edgecontrollerConstants.AppName]; ok {
-				appName = val
+			appName = val
 		}
 		if val, ok := labels[edgecontrollerConstants.Domain]; ok {
-				domain = val
+			domain = val
 		}
 	}
 	return appName, domain
@@ -273,7 +288,9 @@ func (m *metaManager) processInsert(message model.Message) {
 		beehiveContext.Send(modules.DeviceTwinModuleName, message)
 	} else if msgSource != cloudmodules.PolicyControllerModuleName {
 		// Notify edged
-		sendToEdged(&message, false)
+		if _, resType, _, _, _ := parseResource(&message); isEdgedInterestedResource(resType) {
+			sendToEdged(&message, false)
+		}
 	}
 
 	resp := message.NewRespByMessage(&message, OK)
@@ -306,7 +323,9 @@ func (m *metaManager) processUpdate(message model.Message) {
 		resp := message.NewRespByMessage(&message, OK)
 		sendToEdged(resp, message.IsSync())
 	case cloudmodules.EdgeControllerModuleName, cloudmodules.DynamicControllerModuleName:
-		sendToEdged(&message, message.IsSync())
+		if isEdgedInterestedResource(resType) {
+			sendToEdged(&message, message.IsSync())
+		}
 		resp := message.NewRespByMessage(&message, OK)
 		sendToCloud(resp)
 	case cloudmodules.DeviceControllerModuleName:
@@ -363,7 +382,7 @@ func (m *metaManager) processDelete(message model.Message) {
 		beehiveContext.Send(modules.DeviceTwinModuleName, message)
 	}
 
-	if msgSource != cloudmodules.PolicyControllerModuleName {
+	if msgSource != cloudmodules.PolicyControllerModuleName && isEdgedInterestedResource(resType) {
 		// Notify edged
 		sendToEdged(&message, false)
 	}
