@@ -35,6 +35,8 @@ import (
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/golang/protobuf/jsonpb"
 	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/util/wait"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/component-base/featuregate"
 	"k8s.io/klog/v2"
@@ -193,6 +195,7 @@ func (e *edged) syncPod(podCfg *config.PodConfig) {
 	beehiveContext.Send(modules.MetaManagerModuleName, *info)
 	// rawUpdateChan receives the update events from metamanager or edgecontroller
 	rawUpdateChan := podCfg.Channel(beehiveContext.GetContext(), kubelettypes.ApiserverSource)
+	restoredPodsVerified := false
 	for {
 		select {
 		case <-beehiveContext.Done():
@@ -228,6 +231,10 @@ func (e *edged) syncPod(podCfg *config.PodConfig) {
 					continue
 				}
 				podCfg.SetInitPodReady(true)
+				if !restoredPodsVerified {
+					restoredPodsVerified = true
+					go e.verifyRestoredPods(content)
+				}
 			} else if op == model.ResponseOperation && resID == "" && result.GetSource() == metamanager.CloudControllerModel {
 				err := e.handlePodListFromEdgeController(content, rawUpdateChan)
 				if err != nil {
@@ -240,6 +247,9 @@ func (e *edged) syncPod(podCfg *config.PodConfig) {
 				if err != nil {
 					klog.Errorf("handle pod failed: %v", err)
 					continue
+				}
+				if op == model.DeleteOperation && result.IsSync() {
+					beehiveContext.SendResp(*result.NewRespByMessage(&result, "OK"))
 				}
 			}
 		case constants.CSIResourceTypeVolume:
@@ -281,6 +291,10 @@ func (e *edged) handlePod(op string, content []byte, updatesChan chan<- interfac
 	// pod according to the node name. So in this scenario, we query metadata from edge
 	// database and use func handlePodListFromMetaManager to sync with Kubelet.
 	if op == model.DeleteOperation && reflect.DeepEqual(pod.Spec, v1.PodSpec{}) {
+		if pod.UID == "" {
+			klog.Warningf("Rejecting metadata-only pod delete without UID, node: %s, pod: %s/%s", e.nodeName, pod.Namespace, pod.Name)
+			return fmt.Errorf("metadata-only pod delete requires UID")
+		}
 		klog.InfoS("Received metadata-only pod delete, refreshing pod snapshot from MetaManager",
 			"node", e.nodeName,
 			"pod", klog.KObj(&pod),
@@ -349,7 +363,7 @@ func (e *edged) handlePodListFromMetaManager(content []byte, updatesChan chan<- 
 		}
 	}
 
-	klog.InfoS("Received pod list from MetaManager before kubelet SET",
+	klog.InfoS("handlePodListFromMetaManager, Received pod list from MetaManager before kubelet SET",
 		"node", e.nodeName,
 		"databasePodCount", len(lists),
 		"setPodCount", len(pods),
@@ -359,6 +373,45 @@ func (e *edged) handlePodListFromMetaManager(content []byte, updatesChan chan<- 
 	updatesChan <- *updates
 
 	return nil
+}
+
+func (e *edged) verifyRestoredPods(content []byte) {
+	var lists []string
+	if err := json.Unmarshal(content, &lists); err != nil {
+		klog.Errorf("Failed to decode restored pods for verification: %v", err)
+		return
+	}
+	client := metaclient.New()
+	for _, data := range lists {
+		var pod v1.Pod
+		if err := json.Unmarshal([]byte(data), &pod); err != nil {
+			klog.Errorf("Failed to decode restored pod for verification: %v", err)
+			continue
+		}
+		if !filterPodByNodeName(&pod, e.nodeName) || pod.UID == "" {
+			continue
+		}
+		err := wait.PollImmediateUntil(5*time.Second, func() (bool, error) {
+			return verifyRestoredPod(&pod, client.Pods(pod.Namespace).Patch), nil
+		}, beehiveContext.Done())
+		if err != nil {
+			return
+		}
+	}
+}
+
+func verifyRestoredPod(pod *v1.Pod, patchPod func(string, []byte) (*v1.Pod, error)) bool {
+	patch, err := json.Marshal(map[string]interface{}{"metadata": map[string]interface{}{"uid": pod.UID}})
+	if err != nil {
+		return false
+	}
+	klog.InfoS("Verifying restored pod with UID-only PATCH", "pod", klog.KObj(pod), "podUID", pod.UID)
+	_, err = patchPod(pod.Name, patch)
+	if err == nil || apierrors.IsNotFound(err) {
+		return true
+	}
+	klog.ErrorS(err, "Restored pod verification failed", "pod", klog.KObj(pod), "podUID", pod.UID)
+	return apierrors.IsForbidden(err) || apierrors.IsUnauthorized(err) || apierrors.IsConflict(err) || apierrors.IsInvalid(err) || apierrors.IsBadRequest(err)
 }
 
 func (e *edged) handlePodListFromEdgeController(content []byte, updatesChan chan<- interface{}) (err error) {
